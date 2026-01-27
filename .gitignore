@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+build/
+dist/
+
+# Dataset & Databases
+data/raw/*.jsonl
+data/analysis/*.jsonl
+data/chroma_db_reference/
+data/chroma_db_suspicious/
+check_data.py
+
+# IDEs
+.vscode/
+.idea/
