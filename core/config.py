@@ -39,7 +39,7 @@ class Config:
 
     # --- Models ---
     LLM_MODEL_NAME = "gemini-2.0-flash"
-    EMBEDDING_MODEL_NAME = "models/text-embedding-004"
+    EMBEDDING_MODEL_NAME = "models/gemini-embedding-001"
 
     # --- Detection Configuration ---
     # Threshold for flagging a news as suspicious (0.0 to 1.0)
