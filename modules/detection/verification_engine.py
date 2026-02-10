@@ -87,11 +87,29 @@ class VerificationDatabase:
         ]
         
         total = len(docs)
+        total = len(docs)
         for i in range(0, total, batch_size):
             batch = docs[i:i + batch_size]
             UI.info(f"Indexing batch {i//batch_size + 1}/{(total+batch_size-1)//batch_size}")
-            store.add_documents(batch)
-            time.sleep(2)  # Base delay between batches (rate limit protection)
+            
+            # Retry logic for batch indexing
+            retries = 0
+            max_retries = 5
+            while retries < max_retries:
+                try:
+                    store.add_documents(batch)
+                    break
+                except Exception as e:
+                    retries += 1
+                    if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                        wait_time = 10 * (2 ** (retries - 1))  # 10s, 20s, 40s...
+                        UI.warning(f"Rate limit hit during indexing. Retrying in {wait_time}s... ({retries}/{max_retries})")
+                        time.sleep(wait_time)
+                    else:
+                        UI.error(f"Failed to index batch: {e}")
+                        break
+            
+            time.sleep(5)  # Increased base delay between batches
 
 class HybridRetriever(BaseRetriever):
     """Combines vector (semantic) and BM25 (keyword) retrievers for hybrid search."""
