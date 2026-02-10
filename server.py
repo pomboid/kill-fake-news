@@ -191,8 +191,15 @@ async def verify_claim(request: Request, body: VerifyRequest, auth=Depends(verif
             evidencias=result.get("evidencias", [])
         )
     except Exception as e:
+        error_msg = str(e)
+        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+            logger.warning(f"Gemini Rate Limit Hit: {error_msg}")
+            raise HTTPException(
+                status_code=429,
+                detail="Google Gemini API Quota Exceeded. Try again later."
+            )
         logger.error(f"Verification failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=error_msg)
 
 
 @app.post("/api/analyze")
@@ -205,8 +212,15 @@ async def run_analysis(request: Request, body: AnalyzeRequest, auth=Depends(veri
         await detector.run_batch_analysis(limit=body.limit)
         return {"status": "completed", "limit": body.limit}
     except Exception as e:
+        error_msg = str(e)
+        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+            logger.warning(f"Gemini Rate Limit Hit during analysis: {error_msg}")
+            raise HTTPException(
+                status_code=429,
+                detail="Google Gemini API Quota Exceeded. Try again later."
+            )
         logger.error(f"Analysis failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=error_msg)
 
 
 @app.get("/api/history")
