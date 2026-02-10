@@ -6,14 +6,20 @@ load_dotenv()
 
 class Config:
     # --- System Configuration ---
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-    if not GEMINI_API_KEY:
-        # Fallback check if user used GOOGLE_API_KEY
-        GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY")
-        
-    if not GEMINI_API_KEY:
-        # We don't raise error immediately to allow localized checks, but main flows will need it.
-        print("WARNING: GEMINI_API_KEY or GOOGLE_API_KEY not found in environment variables.")
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+
+    @classmethod
+    def require_api_key(cls):
+        """Validates that the API key is present. Call this in modules that need it."""
+        if not cls.GEMINI_API_KEY:
+            raise SystemExit(
+                "\n[ERRO FATAL] Chave de API não encontrada.\n"
+                "Configure uma das variáveis de ambiente:\n"
+                "  - GEMINI_API_KEY\n"
+                "  - GOOGLE_API_KEY\n\n"
+                "Crie um arquivo .env na raiz do projeto com:\n"
+                "  GEMINI_API_KEY=sua_chave_aqui\n"
+            )
 
     # --- Paths ---
     DATA_RAW_DIR = os.path.join("data", "raw")

@@ -10,3 +10,18 @@ requests
 tiktoken
 google-generativeai
 pydantic
+rank_bm25
+rich
+
+# API & Server
+fastapi
+uvicorn[standard]
+slowapi
+
+# Scheduler
+apscheduler
+
+# Testing
+pytest
+pytest-asyncio
+httpx

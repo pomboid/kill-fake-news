@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VORTEX Dashboard</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #c9d1d9; --muted: #8b949e; --cyan: #58a6ff;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --purple: #bc8cff; --radius: 8px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* Header */
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 1.4rem; color: var(--cyan); display: flex; align-items: center; gap: 0.5rem; }
+  .header .badge { font-size: 0.7rem; background: #1a3a2a; color: var(--green); padding: 2px 8px; border-radius: 12px; }
+  .header .badge.offline { background: #3a1a1a; color: var(--red); }
+
+  /* Main */
+  .container { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+
+  /* Stats Grid */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.2rem; }
+  .stat-label { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); letter-spacing: 0.5px; }
+  .stat-value { font-size: 1.8rem; font-weight: 700; margin-top: 4px; }
+  .stat-value.green { color: var(--green); }
+  .stat-value.cyan { color: var(--cyan); }
+  .stat-value.yellow { color: var(--yellow); }
+
+  /* Cards */
+  .section { margin-bottom: 1.5rem; }
+  .section-title { font-size: 1rem; color: var(--cyan); margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin-bottom: 0.5rem; transition: border-color 0.2s; }
+  .card:hover { border-color: var(--cyan); }
+  .card-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+  .card-title { font-weight: 600; font-size: 0.9rem; }
+  .card-meta { color: var(--muted); font-size: 0.8rem; }
+
+  /* Verdict badges */
+  .verdict { display: inline-block; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 0.75rem; }
+  .v-true { background: #1a3a2a; color: var(--green); }
+  .v-fake { background: #3a1a1a; color: var(--red); }
+  .v-partial { background: #3a2a1a; color: var(--yellow); }
+  .v-unknown { background: #1a2a3a; color: var(--cyan); }
+
+  /* Source status */
+  .source-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .source-dot.online { background: var(--green); }
+  .source-dot.offline { background: var(--red); }
+
+  /* Verify Form */
+  .verify-form { display: flex; gap: 0.5rem; }
+  .verify-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.7rem 1rem; color: var(--text); font-size: 0.9rem; outline: none; }
+  .verify-input:focus { border-color: var(--cyan); }
+  .verify-btn { background: var(--cyan); color: var(--bg); border: none; border-radius: var(--radius); padding: 0.7rem 1.5rem; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: opacity 0.2s; }
+  .verify-btn:hover { opacity: 0.85; }
+  .verify-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .verify-result { margin-top: 0.8rem; }
+
+  /* Loading */
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--cyan); border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Grid layout */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .empty { color: var(--muted); font-style: italic; padding: 1rem; text-align: center; }
+
+  /* Quality bar */
+  .quality-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 4px; }
+  .quality-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🌀 VORTEX <span class="badge" id="status-badge">loading...</span></h1>
+  <div class="card-meta" id="uptime"></div>
+</div>
+
+<div class="container">
+  <!-- Stats -->
+  <div class="stats" id="stats">
+    <div class="stat"><div class="stat-label">Reference Articles</div><div class="stat-value cyan" id="s-ref">—</div></div>
+    <div class="stat"><div class="stat-label">Analyzed</div><div class="stat-value green" id="s-analyzed">—</div></div>
+    <div class="stat"><div class="stat-label">Quality Score</div><div class="stat-value yellow" id="s-quality">—</div></div>
+    <div class="stat"><div class="stat-label">Sources Online</div><div class="stat-value green" id="s-sources">—</div></div>
+  </div>
+
+  <!-- Verify -->
+  <div class="section">
+    <div class="section-title">🔍 Verify Claim</div>
+    <div class="card">
+      <div class="verify-form">
+        <input class="verify-input" id="claim-input" placeholder="Cole uma afirmação para verificar..." maxlength="2000" />
+        <button class="verify-btn" id="verify-btn" onclick="verifyClaim()">Verificar</button>
+      </div>
+      <div class="verify-result" id="verify-result"></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- History -->
+    <div class="section">
+      <div class="section-title">📋 Recent Verifications</div>
+      <div id="history-list"><div class="empty">Loading...</div></div>
+    </div>
+
+    <!-- Sources -->
+    <div class="section">
+      <div class="section-title">📡 Monitored Sources</div>
+      <div id="sources-list"><div class="empty">Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_KEY = localStorage.getItem('vortex_api_key') || '';
+const headers = API_KEY ? {'X-API-Key': API_KEY, 'Content-Type': 'application/json'} : {'Content-Type': 'application/json'};
+
+// Check if auth is needed
+async function checkAuth() {
+  const r = await fetch('/api/status', {headers});
+  if (r.status === 401) {
+    const key = prompt('Enter VORTEX API Key:');
+    if (key) {
+      localStorage.setItem('vortex_api_key', key);
+      headers['X-API-Key'] = key;
+      location.reload();
+    }
+  }
+}
+
+async function loadStatus() {
+  try {
+    const r = await fetch('/api/status', {headers});
+    if (r.status === 401) { checkAuth(); return; }
+    const d = await r.json();
+    document.getElementById('s-ref').textContent = d.reference_articles;
+    document.getElementById('s-analyzed').textContent = d.analyzed_articles;
+    document.getElementById('status-badge').textContent = 'online';
+    document.getElementById('status-badge').className = 'badge';
+    const h = Math.floor(d.uptime_seconds / 3600);
+    const m = Math.floor((d.uptime_seconds % 3600) / 60);
+    document.getElementById('uptime').textContent = `Uptime: ${h}h ${m}m`;
+  } catch (e) {
+    document.getElementById('status-badge').textContent = 'offline';
+    document.getElementById('status-badge').className = 'badge offline';
+  }
+}
+
+async function loadQuality() {
+  try {
+    const r = await fetch('/api/quality', {headers});
+    const d = await r.json();
+    document.getElementById('s-quality').textContent = d.score + '%';
+  } catch(e) {}
+}
+
+async function loadSources() {
+  try {
+    const r = await fetch('/api/sources', {headers});
+    const d = await r.json();
+    document.getElementById('s-sources').textContent = `${d.online}/${d.total}`;
+    const el = document.getElementById('sources-list');
+    if (!d.sources || Object.keys(d.sources).length === 0) {
+      el.innerHTML = '<div class="empty">No source data yet</div>';
+      return;
+    }
+    el.innerHTML = Object.entries(d.sources).map(([name, s]) =>
+      `<div class="card"><div class="card-row">
+        <span><span class="source-dot ${s.status}"></span>${name}</span>
+        <span class="card-meta">${s.http_code || s.error || ''}</span>
+      </div></div>`
+    ).join('');
+  } catch(e) {}
+}
+
+async function loadHistory() {
+  try {
+    const r = await fetch('/api/history?limit=8', {headers});
+    const d = await r.json();
+    const el = document.getElementById('history-list');
+    if (!d.entries || d.entries.length === 0) {
+      el.innerHTML = '<div class="empty">No verifications yet</div>';
+      return;
+    }
+    el.innerHTML = d.entries.reverse().map(e => {
+      const v = e.result?.veredito || '?';
+      let vc = 'v-unknown';
+      if (v.includes('FALSO') && !v.includes('PARCIALMENTE')) vc = 'v-fake';
+      else if (v.includes('VERDADEIRO')) vc = 'v-true';
+      else if (v.includes('PARCIALMENTE')) vc = 'v-partial';
+      const ts = (e.timestamp || '').slice(0, 16).replace('T', ' ');
+      return `<div class="card"><div class="card-row">
+        <span class="card-title">${(e.claim||'').slice(0,60)}</span>
+        <span class="verdict ${vc}">${v}</span>
+      </div><div class="card-meta">${ts} · ${e.result?.confianca||0}% confidence</div></div>`;
+    }).join('');
+  } catch(e) {}
+}
+
+async function verifyClaim() {
+  const input = document.getElementById('claim-input');
+  const btn = document.getElementById('verify-btn');
+  const res = document.getElementById('verify-result');
+  const claim = input.value.trim();
+  if (claim.length < 10) { res.innerHTML = '<span class="card-meta">Minimum 10 characters</span>'; return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  res.innerHTML = '';
+
+  try {
+    const r = await fetch('/api/verify', {method: 'POST', headers, body: JSON.stringify({claim})});
+    const d = await r.json();
+    if (r.status === 429) { res.innerHTML = '<span style="color:var(--red)">Rate limit exceeded. Wait and try again.</span>'; return; }
+    if (!r.ok) { res.innerHTML = `<span style="color:var(--red)">${d.detail || 'Error'}</span>`; return; }
+
+    let vc = 'v-unknown';
+    if (d.veredito.includes('FALSO') && !d.veredito.includes('PARCIALMENTE')) vc = 'v-fake';
+    else if (d.veredito.includes('VERDADEIRO')) vc = 'v-true';
+    else if (d.veredito.includes('PARCIALMENTE')) vc = 'v-partial';
+
+    res.innerHTML = `<div class="card" style="border-color:var(--cyan)">
+      <span class="verdict ${vc}">${d.veredito}</span> <span class="card-meta">${d.confianca}% confidence</span>
+      <p style="margin-top:8px">${d.analise}</p>
+      ${d.evidencias?.length ? '<div class="card-meta" style="margin-top:6px">Evidências: ' + d.evidencias.join('; ') + '</div>' : ''}
+    </div>`;
+    loadHistory();
+  } catch(e) {
+    res.innerHTML = `<span style="color:var(--red)">Connection error</span>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Verificar';
+  }
+}
+
+// Enter key to verify
+document.getElementById('claim-input').addEventListener('keydown', e => { if (e.key === 'Enter') verifyClaim(); });
+
+// Initial load
+loadStatus();
+loadQuality();
+loadSources();
+loadHistory();
+
+// Auto-refresh every 60s
+setInterval(() => { loadStatus(); loadSources(); }, 60000);
+</script>
+</body>
+</html>

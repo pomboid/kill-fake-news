@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 .env
+.env.production
 .venv
 env/
 venv/
@@ -14,8 +15,16 @@ data/raw/*.jsonl
 data/analysis/*.jsonl
 data/chroma_db_reference/
 data/chroma_db_suspicious/
+data/verification_history.jsonl
+data/report.html
 check_data.py
+
+# Logs
+logs/
 
 # IDEs
 .vscode/
 .idea/
+
+# Testing
+.pytest_cache/

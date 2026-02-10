@@ -4,6 +4,7 @@ import json
 import time
 import logging
 import re
+from datetime import datetime
 from typing import List, Tuple, Optional
 from functools import wraps
 
@@ -13,6 +14,9 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.documents import Document
+from langchain_community.retrievers import BM25Retriever
+from langchain_core.retrievers import BaseRetriever
+from langchain_core.callbacks import CallbackManagerForRetrieverRun
 
 from core.config import Config
 from core.models import NewsArticle
@@ -20,7 +24,8 @@ from core.ui import UI
 
 logger = logging.getLogger("VORTEX.Verification")
 
-def retry_api(max_retries=3, delay=5):
+def retry_api(max_retries=3, base_delay=2):
+    """Retry decorator with exponential backoff for API rate limit errors."""
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -31,8 +36,9 @@ def retry_api(max_retries=3, delay=5):
                 except Exception as e:
                     retries += 1
                     if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                        UI.warning(f"Rate limit hit. Retrying in {delay}s... ({retries}/{max_retries})")
-                        time.sleep(delay)
+                        wait_time = base_delay * (2 ** (retries - 1))  # Exponential backoff
+                        UI.warning(f"Rate limit hit. Retrying in {wait_time}s... ({retries}/{max_retries})")
+                        time.sleep(wait_time)
                     else:
                         raise e
             return func(*args, **kwargs)
@@ -85,12 +91,38 @@ class VerificationDatabase:
             batch = docs[i:i + batch_size]
             UI.info(f"Indexing batch {i//batch_size + 1}/{(total+batch_size-1)//batch_size}")
             store.add_documents(batch)
-            time.sleep(4) 
+            time.sleep(2)  # Base delay between batches (rate limit protection)
+
+class HybridRetriever(BaseRetriever):
+    """Combines vector (semantic) and BM25 (keyword) retrievers for hybrid search."""
+    vector_retriever: BaseRetriever
+    bm25_retriever: BaseRetriever
+    k: int = 5
+
+    def _get_relevant_documents(self, query: str, *, run_manager: CallbackManagerForRetrieverRun) -> List[Document]:
+        # Get results from both retrievers
+        vector_docs = self.vector_retriever.invoke(query)
+        bm25_docs = self.bm25_retriever.invoke(query)
+        
+        # Merge and deduplicate by content hash
+        seen = set()
+        merged = []
+        for doc in vector_docs + bm25_docs:
+            key = hash(doc.page_content)
+            if key not in seen:
+                seen.add(key)
+                merged.append(doc)
+        return merged[:self.k]
 
 class FactVerificationEngine:
-    """Uses RAG to verify claims against a reference dataset."""
+    """Uses RAG with hybrid search to verify claims against a reference dataset."""
     
+    HISTORY_FILE = os.path.join("data", "verification_history.jsonl")
+    VECTOR_WEIGHT = 0.6  # Weight for vector (semantic) retriever
+    BM25_WEIGHT = 0.4    # Weight for BM25 (keyword) retriever
+
     def __init__(self, mode: str = "reference"):
+        Config.require_api_key()
         self.mode = mode
         self.db = VerificationDatabase(mode)
         self.llm = ChatGoogleGenerativeAI(
@@ -98,6 +130,44 @@ class FactVerificationEngine:
             temperature=0,
             google_api_key=Config.GEMINI_API_KEY
         )
+
+    def _load_articles_as_docs(self) -> List[Document]:
+        """Load articles from JSONL as LangChain Documents for BM25."""
+        input_file = Config.REFERENCE_FILE_PATH
+        if not os.path.exists(input_file):
+            return []
+        docs = []
+        with open(input_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                try:
+                    art = NewsArticle.model_validate_json(line)
+                    docs.append(Document(
+                        page_content=art.content,
+                        metadata={"titulo": art.title}
+                    ))
+                except Exception:
+                    continue
+        return docs
+
+    def _get_hybrid_retriever(self, k: int = 5):
+        """Create a hybrid retriever combining vector search + BM25."""
+        vector_retriever = self.db.get_store().as_retriever(search_kwargs={"k": k})
+        
+        # Try to build BM25 retriever from local docs
+        docs = self._load_articles_as_docs()
+        if docs:
+            bm25_retriever = BM25Retriever.from_documents(docs, k=k)
+            return HybridRetriever(
+                vector_retriever=vector_retriever,
+                bm25_retriever=bm25_retriever,
+                k=k
+            )
+        
+        # Fallback to vector-only if no docs available for BM25
+        UI.warning("BM25 unavailable (no local documents). Using vector-only retrieval.")
+        return vector_retriever
 
     def index_documents(self):
         input_file = Config.REFERENCE_FILE_PATH
@@ -126,7 +196,7 @@ class FactVerificationEngine:
 
     @retry_api()
     def verify_claim(self, claim: str) -> dict:
-        """Cross-references a claim against the reference database."""
+        """Cross-references a claim against the reference database using hybrid search."""
         prompt = ChatPromptTemplate.from_template("""
         Você é um Auditor Especialista em Integridade de Informação.
         Analise a congruência entre a AFIRMAÇÃO e o CONTEXTO documental fornecido.
@@ -151,7 +221,7 @@ class FactVerificationEngine:
         {question}
         """)
         
-        retriever = self.db.get_store().as_retriever(search_kwargs={"k": 5})
+        retriever = self._get_hybrid_retriever(k=5)
         
         def format_docs(docs):
             formatted = []
@@ -174,12 +244,52 @@ class FactVerificationEngine:
         try:
             # Clean possible markdown noise (```json ... ```)
             clean_response = re.search(r'\{.*\}', response, re.DOTALL).group()
-            return json.loads(clean_response)
+            result = json.loads(clean_response)
         except Exception as e:
             logger.error(f"Failed to parse LLM response: {response}")
-            return {
+            result = {
                 "veredito": "[INCONCLUSIVO]",
                 "analise": f"Erro ao processar resposta da IA: {str(e)}",
                 "confianca": 0,
                 "evidencias": []
             }
+        
+        # Save to history (#12)
+        self._save_to_history(claim, result)
+        return result
+
+    def _save_to_history(self, claim: str, result: dict):
+        """Persist every verification to history file."""
+        try:
+            os.makedirs(os.path.dirname(self.HISTORY_FILE), exist_ok=True)
+            entry = {
+                "timestamp": datetime.now().isoformat(),
+                "claim": claim,
+                "result": result
+            }
+            with open(self.HISTORY_FILE, 'a', encoding='utf-8') as f:
+                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        except Exception as e:
+            logger.warning(f"Failed to save verification history: {e}")
+
+    @staticmethod
+    def get_history(limit: int = 20) -> List[dict]:
+        """Retrieve recent verification history entries."""
+        history_file = FactVerificationEngine.HISTORY_FILE
+        if not os.path.exists(history_file):
+            return []
+        entries = []
+        try:
+            with open(history_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    if not line.strip():
+                        continue
+                    try:
+                        entries.append(json.loads(line))
+                    except Exception:
+                        continue
+        except Exception:
+            pass
+        # Return most recent entries
+        return entries[-limit:]
+
