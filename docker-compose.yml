@@ -18,7 +18,7 @@ services:
 
     # ─── Network ───────────────────────────
     ports:
-      - "127.0.0.1:8420:8420"   # Localhost only! Use Nginx Proxy Manager for external access
+      - "0.0.0.0:8420:8420"   # Exposed to network
 
     # ─── Environment ───────────────────────
     env_file:
