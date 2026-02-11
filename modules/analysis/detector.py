@@ -122,12 +122,16 @@ class NewsDetector:
         async with sem:
             UI.info(f"Checking: {article.title[:40]}...")
             detection = await self.analyze_article(article)
+            
+            # Rate limiting: add 2 second delay between API calls to stay within 30K TPM limit
+            await asyncio.sleep(2.0)
+            
             return {
                 "article": json.loads(article.model_dump_json(by_alias=True)),
                 "detection": json.loads(detection.model_dump_json())
             }
 
-    async def run_batch_analysis(self, limit: int = 5):
+    async def run_batch_analysis(self, limit: int = 3):  # Reduced from 5 to 3 for free tier
         articles = self._load_data()
         if not articles: return
 
@@ -143,13 +147,16 @@ class NewsDetector:
         if skipped > 0:
             UI.info(f"Cache: skipping {skipped} already analyzed articles.")
 
-        # Limit to avoid huge costs/time
-        targets = new_articles[:limit]
-        UI.info(f"Analyzing {len(targets)} articles (concurrency: {self.MAX_CONCURRENCY})...")
+        # Apply limit
+        to_analyze = new_articles[:limit]
+        UI.info(f"Starting analysis: {len(to_analyze)} articles (free tier optimized)")
+
+        # Concurrency limit: max 2 simultaneous requests (instead of 3)
+        sem = asyncio.Semaphore(2)  # Reduced from 3 to 2
+        UI.info(f"Analyzing {len(to_analyze)} articles (concurrency: 2)...")
 
         # Parallel analysis with semaphore
-        sem = asyncio.Semaphore(self.MAX_CONCURRENCY)
-        tasks = [self._analyze_with_semaphore(sem, art) for art in targets]
+        tasks = [self._analyze_with_semaphore(sem, art) for art in to_analyze]
         results = await asyncio.gather(*tasks)
 
         self._save(list(results))

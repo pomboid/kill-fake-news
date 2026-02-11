@@ -16,7 +16,7 @@ logger = logging.getLogger("VORTEX.Scheduler")
 
 # ─── Configuration ───────────────────────────────────────────────
 
-COLLECT_INTERVAL = int(os.getenv("COLLECT_INTERVAL_HOURS", "6"))
+COLLECT_INTERVAL = 12  # Changed from 6h to reduce API usage
 SOURCE_CHECK_INTERVAL = int(os.getenv("SOURCE_CHECK_INTERVAL_HOURS", "1"))
 
 # Known news sources to monitor
