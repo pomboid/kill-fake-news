@@ -302,7 +302,7 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 ## 🆘 Suporte
 
 - **Issues**: [GitHub Issues](https://github.com/pomboid/kill-fake-news/issues)
-- **Email**: (adicione seu email aqui se quiser)
+- **LinkedIn**: [Weversson Vital](https://www.linkedin.com/in/weversson-vital/) | [Vitor Benedett Caldas](https://www.linkedin.com/in/vitorbenedettcaldas/)
 
 ---
 
@@ -317,4 +317,4 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ---
 
-**Desenvolvido por Vitor Benedett Caldas** | 2026
+**Desenvolvido por Weversson Vital e Vitor Benedett Caldas** | 2026
