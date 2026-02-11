@@ -282,21 +282,6 @@ async def get_sources(request: Request, auth=Depends(verify_api_key)):
     return await check_sources_status()
 
 
-@app.post("/api/jobs/{job_id}/run")
-@limiter.limit("5/minute")
-async def run_job(job_id: str, request: Request, auth=Depends(verify_api_key)):
-    """Manually trigger a background job."""
-    from scheduler import trigger_job_now
-    try:
-        success = trigger_job_now(job_id)
-        if success:
-             return {"status": "triggered", "job": job_id}
-        raise HTTPException(status_code=404, detail="Job not found or scheduler not running")
-    except Exception as e:
-        logger.error(f"Manual trigger failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 # ─── Dashboard ────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)

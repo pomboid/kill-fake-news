@@ -25,7 +25,8 @@ MONITORED_SOURCES = [
     {"name": "Folha", "url": "https://www.folha.uol.com.br", "type": "reference"},
     {"name": "UOL", "url": "https://www.uol.com.br", "type": "reference"},
     {"name": "BBC Brasil", "url": "https://www.bbc.com/portuguese", "type": "reference"},
-    {"name": "Reuters Brasil", "url": "https://www.reuters.com/", "type": "reference"},
+    {"name": "CNN Brasil", "url": "https://www.cnnbrasil.com.br", "type": "reference"},
+    {"name": "Estadão", "url": "https://www.estadao.com.br", "type": "reference"},
 ]
 
 _sources_status = {}
@@ -159,11 +160,3 @@ def get_scheduler_info() -> dict:
                 info[job.id]["next_run"] = job.next_run_time.isoformat() if job.next_run_time else None
                 
     return info
-
-def trigger_job_now(job_id: str) -> bool:
-    """Force run a job immediately."""
-    if _scheduler_instance and _scheduler_instance.get_job(job_id):
-        _scheduler_instance.modify_job(job_id, next_run_time=datetime.now())
-        logger.info(f"Manually triggered job: {job_id}")
-        return True
-    return False

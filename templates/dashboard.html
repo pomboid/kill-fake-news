@@ -165,22 +165,6 @@
       font-size: 0.75rem;
     }
 
-    .btn-icon {
-      background: none;
-      border: none;
-      color: var(--cyan);
-      cursor: pointer;
-      font-size: 1.2rem;
-      padding: 0 8px;
-      vertical-align: middle;
-      transition: transform 0.2s;
-    }
-
-    .btn-icon:hover {
-      transform: scale(1.2);
-      filter: brightness(1.2);
-    }
-
     .v-true {
       background: #1a3a2a;
       color: var(--green);
@@ -392,20 +376,14 @@
       <div class="section-title">⏱️ System Schedule</div>
       <div class="grid-2">
         <div class="card">
-          <div class="card-title">
-            📰 News Collection & Analysis
-            <button class="btn-icon" onclick="triggerJob('collect_pipeline')" title="Executar agora">▶️</button>
-          </div>
+          <div class="card-title">📰 News Collection & Analysis</div>
           <div class="card-row" style="margin-top:12px">
             <span class="card-meta">Last: <strong id="last-col" style="color:var(--text)">—</strong></span>
             <span class="badge" id="next-col" style="background:#1a2a3a; color:var(--cyan)">—</span>
           </div>
         </div>
         <div class="card">
-          <div class="card-title">
-            📡 Source Monitoring
-            <button class="btn-icon" onclick="triggerJob('check_sources')" title="Verificar agora">▶️</button>
-          </div>
+          <div class="card-title">📡 Source Monitoring</div>
           <div class="card-row" style="margin-top:12px">
             <span class="card-meta">Last: <strong id="last-src" style="color:var(--text)">—</strong></span>
             <span class="badge" id="next-src" style="background:#1a2a3a; color:var(--cyan)">—</span>
@@ -540,19 +518,6 @@
       </div><div class="card-meta">${ts} · ${e.result?.confianca || 0}% confidence</div></div>`;
         }).join('');
       } catch (e) { }
-    }
-
-    async function triggerJob(jobId) {
-      if (!confirm('Executar esta tarefa agora?')) return;
-      try {
-        const r = await fetch(`/api/jobs/${jobId}/run`, { method: 'POST', headers });
-        if (r.ok) {
-          alert('Tarefa iniciada! Acompanhe pelo status.');
-          setTimeout(loadStatus, 1000);
-        } else {
-          alert('Falha ao iniciar tarefa.');
-        }
-      } catch (e) { alert('Erro: ' + e.message); }
     }
 
     async function verifyClaim() {
