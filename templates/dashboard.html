@@ -372,6 +372,26 @@
       </div>
     </div>
 
+    <div class="section">
+      <div class="section-title">⏱️ System Schedule</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">📰 News Collection & Analysis</div>
+          <div class="card-row" style="margin-top:12px">
+            <span class="card-meta">Last: <strong id="last-col" style="color:var(--text)">—</strong></span>
+            <span class="badge" id="next-col" style="background:#1a2a3a; color:var(--cyan)">—</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📡 Source Monitoring</div>
+          <div class="card-row" style="margin-top:12px">
+            <span class="card-meta">Last: <strong id="last-src" style="color:var(--text)">—</strong></span>
+            <span class="badge" id="next-src" style="background:#1a2a3a; color:var(--cyan)">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="grid-2">
       <!-- History -->
       <div class="section">
@@ -420,6 +440,29 @@
         const h = Math.floor(d.uptime_seconds / 3600);
         const m = Math.floor((d.uptime_seconds % 3600) / 60);
         document.getElementById('uptime').textContent = `Uptime: ${h}h ${m}m`;
+
+        if (d.scheduler) {
+          const fmtNext = (iso) => {
+            if (!iso) return 'Pending...';
+            const diff = new Date(iso) - new Date();
+            if (diff < 0) return 'Running...';
+            if (diff > 3600000) return 'in ' + Math.floor(diff / 3600000) + 'h ' + Math.floor((diff % 3600000) / 60000) + 'm';
+            return 'in ' + Math.floor(diff / 60000) + 'm';
+          };
+          const fmtLast = (iso) => iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Never';
+
+          const sc = d.scheduler.collect_pipeline;
+          const ss = d.scheduler.check_sources;
+
+          if (sc) {
+            document.getElementById('next-col').textContent = fmtNext(sc.next_run);
+            document.getElementById('last-col').textContent = fmtLast(sc.last_run);
+          }
+          if (ss) {
+            document.getElementById('next-src').textContent = fmtNext(ss.next_run);
+            document.getElementById('last-src').textContent = fmtLast(ss.last_run);
+          }
+        }
       } catch (e) {
         document.getElementById('status-badge').textContent = 'offline';
         document.getElementById('status-badge').className = 'badge offline';

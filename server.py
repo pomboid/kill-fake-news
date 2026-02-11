@@ -167,12 +167,15 @@ async def get_status(request: Request, auth=Depends(verify_api_key)):
         with open(Config.ANALYSIS_FILE_PATH, 'r', encoding='utf-8') as f:
             analysis_count = sum(1 for line in f if line.strip())
 
+    from scheduler import get_scheduler_info
+    
     return {
         "reference_articles": count,
         "analyzed_articles": analysis_count,
         "uptime_seconds": round(time.time() - START_TIME, 1),
         "auth_enabled": bool(VORTEX_API_KEY),
-        "model": Config.LLM_MODEL_NAME
+        "model": Config.LLM_MODEL_NAME,
+        "scheduler": get_scheduler_info()
     }
 
 

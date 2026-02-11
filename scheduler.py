@@ -29,12 +29,14 @@ MONITORED_SOURCES = [
 ]
 
 _sources_status = {}
+_last_run_times = {}
 
 # ─── Jobs ────────────────────────────────────────────────────────
 
 def job_collect_and_analyze():
     """Collect news, analyze, and reindex."""
     logger.info("Scheduled job: Starting collection pipeline...")
+    _last_run_times["collect_pipeline"] = datetime.now().isoformat()
     try:
         from modules.intelligence.collector import run_collector
         run_collector()
@@ -57,6 +59,7 @@ def job_check_sources():
     """Check if monitored news sources are accessible."""
     global _sources_status
     logger.info("Checking source accessibility...")
+    _last_run_times["check_sources"] = datetime.now().isoformat()
     
     for source in MONITORED_SOURCES:
         try:
@@ -127,4 +130,32 @@ def start_scheduler() -> BackgroundScheduler:
     # Run initial source check
     scheduler.add_job(job_check_sources, id="initial_check", replace_existing=True)
     
+    # Store instance for status retrieval
+    global _scheduler_instance
+    _scheduler_instance = scheduler
     return scheduler
+
+_scheduler_instance = None
+
+def get_scheduler_info() -> dict:
+    """Retrieve next run times for scheduled jobs."""
+    info = {
+        "collect_pipeline": {
+            "next_run": None, 
+            "last_run": _last_run_times.get("collect_pipeline"),
+            "interval_hours": COLLECT_INTERVAL
+        },
+        "check_sources": {
+            "next_run": None, 
+            "last_run": _last_run_times.get("check_sources"),
+            "interval_hours": SOURCE_CHECK_INTERVAL
+        }
+    }
+    
+    if _scheduler_instance:
+        for job in _scheduler_instance.get_jobs():
+            if job.id in info:
+                # Get next run time
+                info[job.id]["next_run"] = job.next_run_time.isoformat() if job.next_run_time else None
+                
+    return info
