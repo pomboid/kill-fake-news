@@ -60,8 +60,9 @@ def job_check_sources():
     
     for source in MONITORED_SOURCES:
         try:
-            with httpx.Client(timeout=10, follow_redirects=True) as client:
-                resp = client.head(source["url"])
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+            with httpx.Client(timeout=10, follow_redirects=True, headers=headers) as client:
+                resp = client.get(source["url"])  # Changed HEAD to GET as some sites block HEAD
                 _sources_status[source["name"]] = {
                     "url": source["url"],
                     "status": "online",
