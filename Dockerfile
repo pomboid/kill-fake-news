@@ -17,9 +17,10 @@ FROM python:3.11-slim AS runtime
 # Security: create non-root user
 RUN groupadd -r vortex && useradd -r -g vortex -d /app -s /sbin/nologin vortex
 
-# Install curl for health check
+# Install curl for health check and tzdata for timezone
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Python packages from builder

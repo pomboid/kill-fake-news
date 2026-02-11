@@ -159,3 +159,11 @@ def get_scheduler_info() -> dict:
                 info[job.id]["next_run"] = job.next_run_time.isoformat() if job.next_run_time else None
                 
     return info
+
+def trigger_job_now(job_id: str) -> bool:
+    """Force run a job immediately."""
+    if _scheduler_instance and _scheduler_instance.get_job(job_id):
+        _scheduler_instance.modify_job(job_id, next_run_time=datetime.now())
+        logger.info(f"Manually triggered job: {job_id}")
+        return True
+    return False

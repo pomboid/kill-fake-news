@@ -23,6 +23,8 @@ services:
     # ─── Environment ───────────────────────
     env_file:
       - .env.production
+    environment:
+      - TZ=America/Sao_Paulo
 
     # ─── Resource Limits ───────────────────
     deploy:
