@@ -28,7 +28,7 @@ async def migrate_sources():
     async for session in get_session():
         for s_data in sources:
             statement = select(Source).where(Source.name == s_data["name"])
-            existing = (await session.exec(statement)).first()
+            existing = (await session.execute(statement)).scalars().first()
             if not existing:
                 source = Source(**s_data)
                 session.add(source)
@@ -52,7 +52,7 @@ async def migrate_articles():
                         
                         # Check exist
                         statement = select(Article).where(Article.url == url)
-                        existing = (await session.exec(statement)).first()
+                        existing = (await session.execute(statement)).scalars().first()
                         if existing: continue
                         
                         # Parse date
@@ -92,14 +92,14 @@ async def migrate_analysis():
                         
                         # Find article
                         statement = select(Article).where(Article.url == url)
-                        article = (await session.exec(statement)).first()
+                        article = (await session.execute(statement)).scalars().first()
                         if not article:
                             print(f"Article not found for analysis: {url}")
                             continue
 
                         # Check exist
                         statement = select(Analysis).where(Analysis.article_id == article.id)
-                        existing = (await session.exec(statement)).first()
+                        existing = (await session.execute(statement)).scalars().first()
                         if existing: continue
 
                         analysis = Analysis(
@@ -147,7 +147,7 @@ async def migrate_history():
                     
                     # Rough check to avoid exact dupe
                     statement = select(Verification).where(Verification.claim == claim).where(Verification.created_at == ts)
-                    existing = (await session.exec(statement)).first()
+                    existing = (await session.execute(statement)).scalars().first()
                     if existing: continue
 
                     verification = Verification(
