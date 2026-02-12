@@ -20,6 +20,8 @@ services:
       retries: 3
     networks:
       - vortex-net
+    depends_on:
+      - vortex-db
 
   frontend:
     build:
@@ -39,6 +41,24 @@ services:
     networks:
       - vortex-net
 
+  vortex-db:
+    image: ankane/pgvector:v0.5.1
+    container_name: vortex-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vortex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vortex_password}
+      POSTGRES_DB: ${POSTGRES_DB:-vortex_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vortex-net
+
 networks:
   vortex-net:
     driver: bridge
+
+volumes:
+  postgres_data:

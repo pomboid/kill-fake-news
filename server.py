@@ -36,6 +36,9 @@ from core.ui import UI
 setup_logging()
 logger = logging.getLogger("VORTEX.API")
 
+from core.database import init_db
+import core.sql_models  # Register models
+
 # ─── Configuration ───────────────────────────────────────────────
 
 ALLOWED_ORIGINS = [
@@ -75,6 +78,9 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
     logger.info("VORTEX API starting up...")
     logger.info(f"CORS origins: {ALLOWED_ORIGINS}")
+    
+    # Initialize Database
+    await init_db()
     
     # Start scheduler
     from scheduler import start_scheduler
