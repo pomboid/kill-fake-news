@@ -1,0 +1,47 @@
+# Python stuff
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.env.production
+.venv
+env/
+venv/
+build/
+dist/
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env.production.local
+frontend/.env.development.local
+
+# Dataset & Databases
+data/raw/*.jsonl
+data/analysis/*.jsonl
+data/chroma_db_reference/
+data/chroma_db_suspicious/
+data/verification_history.jsonl
+data/report.html
+check_data.py
+
+# Logs
+logs/
+*.log
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+coverage/
+
+# OS Files
+.DS_Store
+Thumbs.db
