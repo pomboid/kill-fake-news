@@ -38,9 +38,8 @@ logger = logging.getLogger("VORTEX.API")
 
 # ─── Configuration ───────────────────────────────────────────────
 
-VORTEX_API_KEY = os.getenv("VORTEX_API_KEY", "")
 ALLOWED_ORIGINS = [
-    o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost,http://127.0.0.1,http://localhost:5173").split(",")
+    o.strip() for o in os.getenv("ALLOWED_ORIGINS", "*").split(",")
 ]
 START_TIME = time.time()
 
@@ -67,19 +66,7 @@ class HealthResponse(BaseModel):
     uptime_seconds: float
     version: str = "1.0.0"
 
-# ─── Auth Dependency ─────────────────────────────────────────────
 
-async def verify_api_key(x_api_key: str = Header(None)):
-    """Validate API key for protected endpoints."""
-    if not VORTEX_API_KEY:
-        # No key configured = no auth required (dev mode)
-        return True
-    if x_api_key != VORTEX_API_KEY:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid or missing API key. Set X-API-Key header."
-        )
-    return True
 
 # ─── Lifespan (startup/shutdown) ─────────────────────────────────
 
@@ -87,7 +74,6 @@ async def verify_api_key(x_api_key: str = Header(None)):
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
     logger.info("VORTEX API starting up...")
-    logger.info(f"Auth: {'ENABLED' if VORTEX_API_KEY else 'DISABLED (dev mode)'}")
     logger.info(f"CORS origins: {ALLOWED_ORIGINS}")
     
     # Start scheduler
@@ -107,7 +93,7 @@ app = FastAPI(
     title="VORTEX API",
     description="Fake News Detection & Verification System",
     version="1.0.0",
-    docs_url="/docs" if not VORTEX_API_KEY else None,  # Hide docs in production
+    docs_url="/docs",
     redoc_url=None,
     lifespan=lifespan
 )
@@ -125,10 +111,10 @@ app.state.limiter = limiter
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=False,
-    allow_methods=["GET", "POST"],
-    allow_headers=["X-API-Key", "X-User-ID", "Content-Type"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Request size limit middleware
