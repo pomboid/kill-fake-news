@@ -52,15 +52,7 @@ class Analysis(SQLModel, table=True):
     article: Article = Relationship(back_populates="analysis")
 
 # ─── Embeddings ──────────────────────────────────────────────────
-class Embedding(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    article_id: int = Field(foreign_key="article.id")
-    
-    # 768 dimensions for Gemini Embeddings
-    vector: List[float] = Field(sa_column=Column(Vector(768)))
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-    article: Article = Relationship(back_populates="embedding")
+# Embedding class removed (using Article.embedding column)
 
 # ─── Verifications (History) ─────────────────────────────────────
 class Verification(SQLModel, table=True):
