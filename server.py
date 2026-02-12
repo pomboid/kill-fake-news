@@ -21,7 +21,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", message=".*Chroma.*")
 
-from fastapi import FastAPI, Request, HTTPException, Depends, Header
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -141,7 +141,7 @@ async def health_check(request: Request):
 
 @app.get("/api/status")
 @limiter.limit("30/minute")
-async def get_status(request: Request, auth=Depends(verify_api_key)):
+async def get_status(request: Request):
     """System status: article counts, DB info."""
     count = 0
     if os.path.exists(Config.REFERENCE_FILE_PATH):
@@ -159,7 +159,7 @@ async def get_status(request: Request, auth=Depends(verify_api_key)):
         "reference_articles": count,
         "analyzed_articles": analysis_count,
         "uptime_seconds": round(time.time() - START_TIME, 1),
-        "auth_enabled": bool(VORTEX_API_KEY),
+        "auth_enabled": False,
         "model": Config.LLM_MODEL_NAME,
         "scheduler": get_scheduler_info()
     }
@@ -167,7 +167,7 @@ async def get_status(request: Request, auth=Depends(verify_api_key)):
 
 @app.post("/api/verify", response_model=VerifyResponse)
 @limiter.limit("10/minute")
-async def verify_claim(request: Request, body: VerifyRequest, auth=Depends(verify_api_key)):
+async def verify_claim(request: Request, body: VerifyRequest):
     """Verify a claim against the reference database."""
     user_id = request.headers.get("X-User-ID", "default")
     try:
@@ -194,7 +194,7 @@ async def verify_claim(request: Request, body: VerifyRequest, auth=Depends(verif
 
 @app.post("/api/analyze")
 @limiter.limit("5/minute")
-async def run_analysis(request: Request, body: AnalyzeRequest, auth=Depends(verify_api_key)):
+async def run_analysis(request: Request, body: AnalyzeRequest):
     """Run batch analysis on collected articles."""
     try:
         from modules.analysis.detector import NewsDetector
@@ -215,7 +215,7 @@ async def run_analysis(request: Request, body: AnalyzeRequest, auth=Depends(veri
 
 @app.get("/api/history")
 @limiter.limit("30/minute")
-async def get_history(request: Request, limit: int = 20, auth=Depends(verify_api_key)):
+async def get_history(request: Request, limit: int = 20):
     """Retrieve verification history."""
     user_id = request.headers.get("X-User-ID", "default")
     from modules.detection.verification_engine import FactVerificationEngine
@@ -225,7 +225,7 @@ async def get_history(request: Request, limit: int = 20, auth=Depends(verify_api
 
 @app.get("/api/quality")
 @limiter.limit("30/minute")
-async def get_quality(request: Request, auth=Depends(verify_api_key)):
+async def get_quality(request: Request):
     """Data quality assessment."""
     ref_path = Config.REFERENCE_FILE_PATH
     if not os.path.exists(ref_path):
@@ -264,7 +264,7 @@ async def get_quality(request: Request, auth=Depends(verify_api_key)):
 
 @app.get("/api/sources")
 @limiter.limit("30/minute")
-async def get_sources(request: Request, auth=Depends(verify_api_key)):
+async def get_sources(request: Request):
     """Check status of monitored news sources."""
     from scheduler import check_sources_status
     return await check_sources_status()
@@ -272,7 +272,7 @@ async def get_sources(request: Request, auth=Depends(verify_api_key)):
 
 @app.get("/api/news")
 @limiter.limit("20/minute")
-async def get_news(request: Request, limit: int = 50, auth=Depends(verify_api_key)):
+async def get_news(request: Request, limit: int = 50):
     """Retrieve scraped news articles from the reference database."""
     if not os.path.exists(Config.REFERENCE_FILE_PATH):
         return {"count": 0, "articles": []}
