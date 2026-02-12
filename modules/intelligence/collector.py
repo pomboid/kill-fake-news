@@ -28,7 +28,11 @@ class ContentScraper:
         "tudocelular.com": {"t": "h2.title_main", "s": "p.subtitle", "b": "div.text_content", "p": "p"},
         "canaltech.com.br": {"t": "h1", "s": "div.c-card__title", "b": "div.c-body", "p": "p"},
         "inovacaotecnologica.com.br": {"t": "h1", "s": None, "b": "div#texto", "p": "p"},
-        "bbc.com": {"t": "h1", "s": None, "b": "main", "p": "p"}
+        "bbc.com": {"t": "h1", "s": None, "b": "main", "p": "p"},
+        "folha.uol.com.br": {"t": "h1.c-content-head__title", "s": "h2.c-content-head__subtitle", "b": "div.c-news__body", "p": "p"},
+        "noticias.uol.com.br": {"t": "h1.pg-title", "s": "p.pg-subtitle", "b": "div.text", "p": "p"},
+        "cnnbrasil.com.br": {"t": "h1.post__title", "s": "p.post__excerpt", "b": "div.post__content", "p": "p"},
+        "estadao.com.br": {"t": "h1.n-title", "s": "h2.n-subtitle", "b": "div.n-content", "p": "p"}
     }
 
     def __init__(self):
@@ -209,6 +213,9 @@ class RSSCollectorEngine:
                             else:
                                 UI.warning(f"[{name}] Scrape rejected: {link} (short content/title or parse error)")
                                 pass
+                                
+                    except Exception as e:
+                        UI.error(f"Source Failure ({name}): {e}")
 
 async def run_collector(limit: int = None):
     engine = RSSCollectorEngine()
