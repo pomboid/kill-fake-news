@@ -238,7 +238,8 @@ def main():
             async def show_status():
                 UI.info("VORTEX SYSTEM STATUS")
                 from core.database import get_session
-                from core.sql_models import Article, func, select
+                from sqlmodel import select, func
+                from core.sql_models import Article
                 
                 async for session in get_session():
                     # Count Articles
