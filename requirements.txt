@@ -1,5 +1,6 @@
 ﻿backoff==2.2.1
 beautifulsoup4==4.12.3
+python-dotenv==1.0.1
 fastapi==0.109.2
 google-generativeai==0.3.2
 httpx==0.26.0
