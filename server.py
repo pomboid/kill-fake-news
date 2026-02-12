@@ -12,7 +12,7 @@ import warnings
 import time
 from datetime import datetime
 from contextlib import asynccontextmanager
-from typing import Optional
+from typing import Optional, List
 
 # Silence noisy libs
 os.environ["ANONYMIZED_TELEMETRY"] = "False"
@@ -21,23 +21,24 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", message=".*Chroma.*")
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from sqlmodel import select, func, col
 
 from core.logging_config import setup_logging
 from core.config import Config
 from core.ui import UI
+from core.database import init_db, get_session
+from core.sql_models import Article, Analysis, Verification, Source
+import core.sql_models  # Register models
 
 setup_logging()
 logger = logging.getLogger("VORTEX.API")
-
-from core.database import init_db
-import core.sql_models  # Register models
 
 # ─── Configuration ───────────────────────────────────────────────
 
@@ -61,15 +62,13 @@ class AnalyzeRequest(BaseModel):
 class VerifyResponse(BaseModel):
     veredito: str
     analise: str
-    confianca: int
+    confianca: float
     evidencias: list
 
 class HealthResponse(BaseModel):
     status: str
     uptime_seconds: float
     version: str = "1.0.0"
-
-
 
 # ─── Lifespan (startup/shutdown) ─────────────────────────────────
 
@@ -149,21 +148,17 @@ async def health_check(request: Request):
 @limiter.limit("30/minute")
 async def get_status(request: Request):
     """System status: article counts, DB info."""
-    count = 0
-    if os.path.exists(Config.REFERENCE_FILE_PATH):
-        with open(Config.REFERENCE_FILE_PATH, 'r', encoding='utf-8') as f:
-            count = sum(1 for line in f if line.strip())
-
-    analysis_count = 0
-    if os.path.exists(Config.ANALYSIS_FILE_PATH):
-        with open(Config.ANALYSIS_FILE_PATH, 'r', encoding='utf-8') as f:
-            analysis_count = sum(1 for line in f if line.strip())
+    async for session in get_session():
+        article_count = (await session.execute(select(func.count(Article.id)))).one()[0]
+        analysis_count = (await session.execute(select(func.count(Analysis.id)))).one()[0]
+        verification_count = (await session.execute(select(func.count(Verification.id)))).one()[0]
 
     from scheduler import get_scheduler_info
     
     return {
-        "reference_articles": count,
+        "reference_articles": article_count,
         "analyzed_articles": analysis_count,
+        "verifications": verification_count,
         "uptime_seconds": round(time.time() - START_TIME, 1),
         "auth_enabled": False,
         "model": Config.LLM_MODEL_NAME,
@@ -179,11 +174,11 @@ async def verify_claim(request: Request, body: VerifyRequest):
     try:
         from modules.detection.verification_engine import FactVerificationEngine
         engine = FactVerificationEngine()
-        result = engine.verify_claim(body.claim, user_id=user_id)
+        result = await engine.verify_claim(body.claim, user_id=user_id)
         return VerifyResponse(
             veredito=result.get("veredito", "[INCONCLUSIVO]"),
             analise=result.get("analise", ""),
-            confianca=result.get("confianca", 0),
+            confianca=float(result.get("confianca", 0)),
             evidencias=result.get("evidencias", [])
         )
     except Exception as e:
@@ -225,7 +220,8 @@ async def get_history(request: Request, limit: int = 20):
     """Retrieve verification history."""
     user_id = request.headers.get("X-User-ID", "default")
     from modules.detection.verification_engine import FactVerificationEngine
-    entries = FactVerificationEngine.get_history(limit=limit, user_id=user_id)
+    engine = FactVerificationEngine()
+    entries = await engine.get_history(limit=limit, user_id=user_id)
     return {"count": len(entries), "entries": entries}
 
 
@@ -233,38 +229,22 @@ async def get_history(request: Request, limit: int = 20):
 @limiter.limit("30/minute")
 async def get_quality(request: Request):
     """Data quality assessment."""
-    ref_path = Config.REFERENCE_FILE_PATH
-    if not os.path.exists(ref_path):
-        return {"total": 0, "valid": 0, "score": 0.0, "issues": ["Reference file missing"]}
-
-    total = valid = 0
+    async for session in get_session():
+        total = (await session.execute(select(func.count(Article.id)))).one()[0]
+        
+        # Count issues (simple heuristic)
+        short_content_count = (await session.execute(select(func.count(Article.id)).where(func.length(Article.content) < 50))).one()[0]
+        missing_title = (await session.execute(select(func.count(Article.id)).where(Article.title == None))).one()[0]
+    
     issues = []
-    with open(ref_path, 'r', encoding='utf-8') as f:
-        for i, line in enumerate(f, 1):
-            if not line.strip():
-                continue
-            total += 1
-            try:
-                data = json.loads(line)
-                has_title = bool(data.get("titulo", "").strip())
-                has_content = bool(data.get("corpo_do_texto", "").strip())
-                has_url = bool(data.get("url", "").strip())
-                content_len = len(data.get("corpo_do_texto", ""))
-
-                if not has_title:
-                    issues.append(f"Line {i}: missing title")
-                elif not has_content:
-                    issues.append(f"Line {i}: missing content")
-                elif not has_url:
-                    issues.append(f"Line {i}: missing URL")
-                elif content_len < 50:
-                    issues.append(f"Line {i}: content too short ({content_len} chars)")
-                else:
-                    valid += 1
-            except Exception:
-                issues.append(f"Line {i}: malformed JSON")
-
+    if short_content_count > 0:
+        issues.append(f"{short_content_count} articles have content shorter than 50 chars")
+    if missing_title > 0:
+        issues.append(f"{missing_title} articles missing title")
+        
+    valid = total - short_content_count - missing_title
     score = (valid / total * 100) if total > 0 else 0
+    
     return {"total": total, "valid": valid, "score": round(score, 1), "issues": issues[:20]}
 
 
@@ -273,31 +253,20 @@ async def get_quality(request: Request):
 async def get_sources(request: Request):
     """Check status of monitored news sources."""
     from scheduler import check_sources_status
-    return await check_sources_status()
+    if asyncio.iscoroutinefunction(check_sources_status):
+        return await check_sources_status()
+    return check_sources_status()
 
 
 @app.get("/api/news")
 @limiter.limit("20/minute")
 async def get_news(request: Request, limit: int = 50):
     """Retrieve scraped news articles from the reference database."""
-    if not os.path.exists(Config.REFERENCE_FILE_PATH):
-        return {"count": 0, "articles": []}
-    
-    articles = []
-    try:
-        with open(Config.REFERENCE_FILE_PATH, 'r', encoding='utf-8') as f:
-            for line in f:
-                if line.strip():
-                    try:
-                        articles.append(json.loads(line))
-                    except:
-                        continue
-    except Exception as e:
-        logger.error(f"Error reading reference file: {e}")
-        return {"count": 0, "articles": [], "error": str(e)}
-    
-    # Return latest first
-    return {"count": len(articles), "articles": articles[::-1][:limit]}
+    async for session in get_session():
+        stmt = select(Article).order_by(Article.published_at.desc()).limit(limit)
+        result = await session.execute(stmt)
+        articles = result.scalars().all()
+        return {"count": len(articles), "articles": articles}
 
 
 # ─── Dashboard ────────────────────────────────────────────────────

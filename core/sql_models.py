@@ -27,11 +27,15 @@ class Article(SQLModel, table=True):
     published_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
+    # Text Analysis
+    embedding: Optional[List[float]] = Field(default=None, sa_column=Column(Vector(768)))
+    
     source_id: Optional[int] = Field(default=None, foreign_key="source.id")
     source: Optional[Source] = Relationship(back_populates="articles")
     
     analysis: Optional["Analysis"] = Relationship(back_populates="article")
-    embedding: Optional["Embedding"] = Relationship(back_populates="article")
+    # The relationship to the separate Embedding table is removed as the embedding is now directly on the Article model.
+    # If a separate Embedding table is still desired for other reasons, the relationship name would need to be changed.
 
 # ─── Analysis ────────────────────────────────────────────────────
 class Analysis(SQLModel, table=True):

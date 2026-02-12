@@ -40,7 +40,7 @@ def job_collect_and_analyze():
     _last_run_times["collect_pipeline"] = datetime.now().isoformat()
     try:
         from modules.intelligence.collector import run_collector
-        run_collector()
+        asyncio.run(run_collector())
         logger.info("Collection complete. Starting analysis...")
         
         from modules.analysis.detector import NewsDetector
@@ -50,7 +50,7 @@ def job_collect_and_analyze():
         
         from modules.detection.verification_engine import FactVerificationEngine
         engine = FactVerificationEngine()
-        engine.index_documents()
+        asyncio.run(engine.index_documents())
         logger.info("Reindex complete. Pipeline finished.")
     except Exception as e:
         logger.error(f"Pipeline job failed: {e}")

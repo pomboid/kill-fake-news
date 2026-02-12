@@ -1,221 +1,105 @@
-
-import os
-import json
-import time
+import asyncio
 import logging
+import json
 import re
 from datetime import datetime
-from typing import List, Tuple, Optional
-from functools import wraps
+from typing import List, Optional
 
-from langchain_chroma import Chroma
-from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.documents import Document
-from langchain_community.retrievers import BM25Retriever
-from langchain_core.retrievers import BaseRetriever
-from langchain_core.callbacks import CallbackManagerForRetrieverRun
+import google.generativeai as genai
+from sqlmodel import select, col, text
+from sqlalchemy import func
 
 from core.config import Config
-from core.models import NewsArticle
+from core.database import get_session
+from core.sql_models import Article, Verification
 from core.ui import UI
 
 logger = logging.getLogger("VORTEX.Verification")
 
-def retry_api(max_retries=3, base_delay=2):
-    """Retry decorator with exponential backoff for API rate limit errors."""
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            retries = 0
-            while retries < max_retries:
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    retries += 1
-                    if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                        wait_time = base_delay * (2 ** (retries - 1))  # Exponential backoff
-                        UI.warning(f"Rate limit hit. Retrying in {wait_time}s... ({retries}/{max_retries})")
-                        time.sleep(wait_time)
-                    else:
-                        raise e
-            return func(*args, **kwargs)
-        return wrapper
-    return decorator
-
-class VerificationDatabase:
-    """Manages the reference vector store for fact-checking."""
-    def __init__(self, mode: str = "reference"):
-        self.mode = mode
-        self.embeddings = GoogleGenerativeAIEmbeddings(
-            model=Config.EMBEDDING_MODEL_NAME,
-            google_api_key=Config.GEMINI_API_KEY
-        )
-        if mode == "suspicious":
-            self.path = Config.CHROMA_PERSIST_DIR_SUSPICIOUS
-            self.collection = Config.COLLECTION_NAME_SUSPICIOUS
-        else:
-            self.path = Config.CHROMA_PERSIST_DIR_REFERENCE
-            self.collection = Config.COLLECTION_NAME_REFERENCE
-
-    def clear(self):
-        if os.path.exists(self.path):
-            import shutil
-            shutil.rmtree(self.path)
-
-    def get_store(self) -> Chroma:
-        return Chroma(
-            persist_directory=self.path,
-            embedding_function=self.embeddings,
-            collection_name=self.collection
-        )
-
-    def add_articles(self, articles: List[NewsArticle], batch_size: int = 5):
-        store = self.get_store()
-        docs = [
-            Document(
-                page_content=art.content,
-                metadata={
-                    "titulo": art.title,
-                    "subtitulo": art.subtitle or "",
-                    "status_verificacao": art.status,
-                    "source": "FactCheckingEngine"
-                }
-            ) for art in articles
-        ]
-        
-        total = len(docs)
-        total = len(docs)
-        for i in range(0, total, batch_size):
-            batch = docs[i:i + batch_size]
-            UI.info(f"Indexing batch {i//batch_size + 1}/{(total+batch_size-1)//batch_size}")
-            
-            # Retry logic for batch indexing
-            retries = 0
-            max_retries = 5
-            while retries < max_retries:
-                try:
-                    store.add_documents(batch)
-                    break
-                except Exception as e:
-                    retries += 1
-                    if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                        wait_time = 10 * (2 ** (retries - 1))  # 10s, 20s, 40s...
-                        UI.warning(f"Rate limit hit during indexing. Retrying in {wait_time}s... ({retries}/{max_retries})")
-                        time.sleep(wait_time)
-                    else:
-                        UI.error(f"Failed to index batch: {e}")
-                        break
-            
-            time.sleep(5)  # Increased base delay between batches
-
-class HybridRetriever(BaseRetriever):
-    """Combines vector (semantic) and BM25 (keyword) retrievers for hybrid search."""
-    vector_retriever: BaseRetriever
-    bm25_retriever: BaseRetriever
-    k: int = 5
-
-    def _get_relevant_documents(self, query: str, *, run_manager: CallbackManagerForRetrieverRun) -> List[Document]:
-        # Get results from both retrievers
-        vector_docs = self.vector_retriever.invoke(query)
-        bm25_docs = self.bm25_retriever.invoke(query)
-        
-        # Merge and deduplicate by content hash
-        seen = set()
-        merged = []
-        for doc in vector_docs + bm25_docs:
-            key = hash(doc.page_content)
-            if key not in seen:
-                seen.add(key)
-                merged.append(doc)
-        return merged[:self.k]
-
 class FactVerificationEngine:
-    """Uses RAG with hybrid search to verify claims against a reference dataset."""
+    """Uses RAG with semantic search (pgvector) to verify claims."""
     
-    HISTORY_FILE = os.path.join("data", "verification_history.jsonl")
-    VECTOR_WEIGHT = 0.6  # Weight for vector (semantic) retriever
-    BM25_WEIGHT = 0.4    # Weight for BM25 (keyword) retriever
-
-    def __init__(self, mode: str = "reference"):
+    def __init__(self):
         Config.require_api_key()
-        self.mode = mode
-        self.db = VerificationDatabase(mode)
-        self.llm = ChatGoogleGenerativeAI(
-            model=Config.LLM_MODEL_NAME,
-            temperature=0,
-            google_api_key=Config.GEMINI_API_KEY
-        )
+        genai.configure(api_key=Config.GEMINI_API_KEY)
+        self.llm = genai.GenerativeModel(Config.LLM_MODEL_NAME)
+        self.embedding_model = Config.EMBEDDING_MODEL_NAME 
 
-    def _load_articles_as_docs(self) -> List[Document]:
-        """Load articles from JSONL as LangChain Documents for BM25."""
-        input_file = Config.REFERENCE_FILE_PATH
-        if not os.path.exists(input_file):
-            return []
-        docs = []
-        with open(input_file, 'r', encoding='utf-8') as f:
-            for line in f:
-                if not line.strip():
-                    continue
-                try:
-                    art = NewsArticle.model_validate_json(line)
-                    docs.append(Document(
-                        page_content=art.content,
-                        metadata={"titulo": art.title}
-                    ))
-                except Exception:
-                    continue
-        return docs
-
-    def _get_hybrid_retriever(self, k: int = 5):
-        """Create a hybrid retriever combining vector search + BM25."""
-        vector_retriever = self.db.get_store().as_retriever(search_kwargs={"k": k})
-        
-        # Try to build BM25 retriever from local docs
-        docs = self._load_articles_as_docs()
-        if docs:
-            bm25_retriever = BM25Retriever.from_documents(docs, k=k)
-            return HybridRetriever(
-                vector_retriever=vector_retriever,
-                bm25_retriever=bm25_retriever,
-                k=k
+    async def _generate_embedding(self, text: str) -> List[float]:
+        try:
+            # truncate to avoid token limit if necessary, though model handles large context
+            result = await genai.embed_content_async(
+                model=self.embedding_model,
+                content=text[:9000],
+                task_type="retrieval_document"
             )
+            return result['embedding']
+        except Exception as e:
+            logger.error(f"Embedding generation failed: {e}")
+            return []
+
+    async def index_documents(self, batch_size: int = 10):
+        """Generates embeddings for articles that don't have them."""
+        UI.info("Checking for unindexed articles...")
         
-        # Fallback to vector-only if no docs available for BM25
-        UI.warning("BM25 unavailable (no local documents). Using vector-only retrieval.")
-        return vector_retriever
+        async for session in get_session():
+            # Select articles where embedding is NULL
+            stmt = select(Article).where(Article.embedding == None).limit(batch_size)
+            result = await session.execute(stmt)
+            articles = result.scalars().all()
+            
+            if not articles:
+                UI.info("All articles are indexed.")
+                return
 
-    def index_documents(self):
-        input_file = Config.REFERENCE_FILE_PATH
-        if not os.path.exists(input_file):
-            UI.warning(f"Reference file not found. Creating empty file: {input_file}")
-            os.makedirs(os.path.dirname(input_file), exist_ok=True)
-            with open(input_file, 'w', encoding='utf-8') as f:
-                pass # Create empty file
+            UI.info(f"Indexing {len(articles)} articles...")
+            
+            for article in articles:
+                text_content = f"Title: {article.title}\nSubtitle: {article.subtitle or ''}\nContent: {article.content}"
+                
+                # Check for rate limits and errors
+                embedding = await self._generate_embedding(text_content)
+                
+                if embedding:
+                    article.embedding = embedding
+                    session.add(article)
+                    await session.commit()
+                    UI.info(f"Indexed: {article.title[:30]}...")
+                
+                await asyncio.sleep(1.0) # Rate limit protection
 
-        articles = []
-        with open(input_file, 'r', encoding='utf-8') as f:
-            for i, line in enumerate(f, 1):
-                if not line.strip(): continue
-                try:
-                    articles.append(NewsArticle.model_validate_json(line))
-                except Exception as e:
-                    UI.warning(f"Skipping malformed entry at line {i}: {str(e)[:50]}...")
+    async def verify_claim(self, claim: str, user_id: str = "default") -> dict:
+        """Cross-references a claim against the DB using pgvector search."""
+        
+        # 1. Generate claim embedding
+        try:
+            claim_embedding_result = await genai.embed_content_async(
+                model=self.embedding_model,
+                content=claim,
+                task_type="retrieval_query"
+            )
+            claim_vec = claim_embedding_result['embedding']
+        except Exception as e:
+            return {"veredito": "ERRO", "analise": f"Falha ao gerar embedding: {e}", "confianca": 0, "evidencias": []}
 
-        if not articles:
-            UI.warning("No articles found to index. Base is currently empty.")
-            return
-
-        UI.info(f"Indexing {len(articles)} documents for verification reference.")
-        self.db.clear()
-        self.db.add_articles(articles)
-
-    @retry_api()
-    def verify_claim(self, claim: str, user_id: str = "default") -> dict:
-        """Cross-references a claim against the reference database using hybrid search."""
-        prompt = ChatPromptTemplate.from_template("""
+        # 2. Search relevant articles
+        context_docs = []
+        evidence_ids = []
+        
+        async for session in get_session():
+            # Cosine distance search using pgvector
+            stmt = select(Article).order_by(Article.embedding.cosine_distance(claim_vec)).limit(5)
+            result = await session.execute(stmt)
+            articles = result.scalars().all()
+            
+            for art in articles:
+                context_docs.append(f"NOTÍCIA: {art.title}\nCONTEÚDO: {art.content[:2000]}") # Truncate content for context
+                if art.id: evidence_ids.append(art.id)
+        
+        context_text = "\n\n---\n\n".join(context_docs)
+        
+        # 3. LLM Verification
+        prompt = f"""
         Você é um Auditor Especialista em Integridade de Informação.
         Analise a congruência entre a AFIRMAÇÃO e o CONTEXTO documental fornecido.
         
@@ -233,82 +117,64 @@ class FactVerificationEngine:
         }}
         
         CONTEXTO OBTIDO: 
-        {context}
+        {context_text}
         
         AFIRMAÇÃO ANALISADA: 
-        {question}
-        """)
+        {claim}
+        """
         
-        retriever = self._get_hybrid_retriever(k=5)
-        
-        def format_docs(docs):
-            formatted = []
-            for d in docs:
-                title = d.metadata.get('titulo', 'Fonte Desconhecida')
-                content = d.page_content
-                formatted.append(f"NOTÍCIA: {title}\nCONTEÚDO: {content}")
-            return "\n\n---\n\n".join(formatted)
-
-        chain = (
-            {"context": retriever | format_docs, "question": RunnablePassthrough()}
-            | prompt
-            | self.llm
-            | StrOutputParser()
-        )
-        
-        response = chain.invoke(claim)
-        
-        # Parse JSON from response
         try:
-            # Clean possible markdown noise (```json ... ```)
-            clean_response = re.search(r'\{.*\}', response, re.DOTALL).group()
-            result = json.loads(clean_response)
+            response = await self.llm.generate_content_async(
+                prompt,
+                generation_config=genai.GenerationConfig(response_mime_type="application/json")
+            )
+            result = json.loads(response.text)
         except Exception as e:
-            logger.error(f"Failed to parse LLM response: {response}")
+            logger.error(f"LLM Verification failed: {e}")
             result = {
                 "veredito": "[INCONCLUSIVO]",
-                "analise": f"Erro ao processar resposta da IA: {str(e)}",
+                "analise": f"Erro na análise LLM: {str(e)}",
                 "confianca": 0,
                 "evidencias": []
             }
         
-        # Save to history (#12)
-        self._save_to_history(claim, result, user_id=user_id)
+        # 4. Save to DB
+        await self._save_verification(claim, result, user_id, evidence_ids)
+        
         return result
 
-    def _save_to_history(self, claim: str, result: dict, user_id: str = "default"):
-        """Persist every verification to history file."""
-        history_file = os.path.join("data", "users", user_id, "history.jsonl")
-        try:
-            os.makedirs(os.path.dirname(history_file), exist_ok=True)
-            entry = {
-                "timestamp": datetime.now().isoformat(),
-                "claim": claim,
-                "result": result
-            }
-            with open(history_file, 'a', encoding='utf-8') as f:
-                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-        except Exception as e:
-            logger.warning(f"Failed to save verification history for {user_id}: {e}")
+    async def _save_verification(self, claim: str, result: dict, user_id: str, evidence_ids: List[int]):
+        async for session in get_session():
+            verification = Verification(
+                user_id=user_id,
+                claim=claim,
+                verdict=result.get("veredito", "INCONCLUSIVO"),
+                confidence=float(result.get("confianca", 0)),
+                evidence=evidence_ids,
+                created_at=datetime.utcnow()
+            )
+            session.add(verification)
+            await session.commit()
 
-    @staticmethod
-    def get_history(limit: int = 20, user_id: str = "default") -> List[dict]:
-        """Retrieve recent verification history entries."""
-        history_file = os.path.join("data", "users", user_id, "history.jsonl")
-        if not os.path.exists(history_file):
-            return []
-        entries = []
-        try:
-            with open(history_file, 'r', encoding='utf-8') as f:
-                for line in f:
-                    if not line.strip():
-                        continue
-                    try:
-                        entries.append(json.loads(line))
-                    except Exception:
-                        continue
-        except Exception:
-            pass
-        # Return most recent entries
-        return entries[-limit:]
+    async def get_history(self, limit: int = 20, user_id: str = "default") -> List[dict]:
+        async for session in get_session():
+            stmt = select(Verification).where(Verification.user_id == user_id).order_by(Verification.created_at.desc()).limit(limit)
+            result = await session.execute(stmt)
+            verifications = result.scalars().all()
+            
+            return [
+                {
+                    "timestamp": v.created_at.isoformat(),
+                    "claim": v.claim,
+                    "result": {
+                        "veredito": v.verdict,
+                        "analise": f"Confiança: {v.confidence}%", # Simplified for history list
+                        "confianca": v.confidence
+                    }
+                } for v in verifications
+            ]
+        return []
 
+if __name__ == "__main__":
+    engine = FactVerificationEngine()
+    asyncio.run(engine.index_documents())

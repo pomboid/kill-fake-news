@@ -1,53 +1,21 @@
 import asyncio
-import requests
-import json
 import re
-import os
 import logging
-import xml.etree.ElementTree as ET
-from typing import Set, List, Optional, Dict
-from urllib.parse import urljoin, urlparse
+import json
+from typing import List, Optional, Dict
+from urllib.parse import urlparse
 from bs4 import BeautifulSoup
+import httpx
+from datetime import datetime
 
-from core.config import Config
-from core.models import NewsArticle
+from sqlmodel import select
+from core.database import get_session
+from core.sql_models import Article, Source
 from core.ui import UI
 
 # Logging Setup
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger("VORTEX.Collector")
-
-class URLRegistry:
-    """Manages crawled URLs and titles with persistent storage for deduplication."""
-    def __init__(self, persistent_file: str):
-        self.file_path = persistent_file
-        self.urls: Set[str] = set()
-        self.titles: Set[str] = set()
-        self._load()
-
-    def _load(self):
-        if not os.path.exists(self.file_path): return
-        try:
-            with open(self.file_path, 'r', encoding='utf-8') as f:
-                for line in f:
-                    if not line.strip(): continue
-                    try:
-                        data = json.loads(line)
-                        if 'url' in data: self.urls.add(data['url'])
-                        if 'titulo' in data: self.titles.add(self._normalize(data['titulo']))
-                    except: continue
-        except Exception as e:
-            UI.error(f"Registry load error: {e}")
-
-    def _normalize(self, text: str) -> str:
-        return re.sub(r'[^\w\s]', '', text.lower()).strip()
-
-    def exists(self, url: str, title: str) -> bool:
-        return url in self.urls or self._normalize(title) in self.titles
-
-    def add(self, url: str, title: str):
-        self.urls.add(url)
-        self.titles.add(self._normalize(title))
 
 class ContentScraper:
     """Handles site-specific extraction for high-quality news content."""
@@ -76,12 +44,12 @@ class ContentScraper:
         for p in patterns: text = re.sub(p, '', text, flags=re.IGNORECASE | re.DOTALL)
         return re.sub(r'\s+', ' ', text).strip()
 
-    def scrape(self, url: str) -> Optional[NewsArticle]:
+    async def scrape(self, client: httpx.AsyncClient, url: str) -> Optional[Article]:
         try:
             domain = urlparse(url).netloc.replace("www.", "")
-            resp = requests.get(url, headers=self.headers, timeout=20)
+            resp = await client.get(url, timeout=20)
             resp.raise_for_status()
-            resp.encoding = 'utf-8'
+            
             soup = BeautifulSoup(resp.text, 'html.parser')
             
             json_ld = self._extract_json_ld(soup)
@@ -92,16 +60,26 @@ class ContentScraper:
 
             content = self._extract_body(soup, config)
             if not content or len(content) < 300: return None
+            
+            # Parse date
+            pub_date = None
+            date_str = json_ld.get('datePublished', '')
+            if date_str:
+                try:
+                    pub_date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                except: pass
 
-            return NewsArticle(
-                titulo=title,
-                subtitulo=self._clean_text(self._select(soup, config.get("s"))),
-                autor=self._extract_author(json_ld),
-                data_publicacao=json_ld.get('datePublished', ''),
+            return Article(
+                title=title,
+                subtitle=self._clean_text(self._select(soup, config.get("s"))),
+                author=self._extract_author(json_ld),
+                published_at=pub_date,
                 url=url,
-                corpo_do_texto=content
+                content=content,
+                created_at=datetime.utcnow()
             )
         except Exception as e:
+            # logger.warning(f"Scrape failed for {url}: {e}")
             return None
 
     def _get_config(self, domain: str) -> dict:
@@ -150,72 +128,77 @@ class ContentScraper:
         return "\n\n".join(text_blocks)
 
 class RSSCollectorEngine:
-    """Robust RSS Engine with multi-source deduplication and improved XML parsing."""
-    def __init__(self, sources: List[Dict]):
-        self.sources = sources
-        self.registry = URLRegistry(Config.REFERENCE_FILE_PATH)
+    """Robust RSS Engine with DB storage."""
+    
+    def __init__(self):
         self.scraper = ContentScraper()
 
-    def run(self):
-        UI.info(f"Global Sync: {len(self.sources)} intelligence sources.")
-        total_saved = 0
+    async def run(self):
+        # Fetch sources from DB or hardcoded fallback
+        UI.info(f"Connecting to database...")
+        
+        sources_data = [
+            {"name": "G1", "url": "https://g1.globo.com/rss/g1/tecnologia/"},
+            {"name": "BBC", "url": "https://feeds.bbci.co.uk/portuguese/rss.xml"},
+            {"name": "Tecnoblog", "url": "https://tecnoblog.net/feed/"},
+             # Add other sources as needed or rely on DB sources
+        ]
 
-        for src in self.sources:
-            UI.info(f"Target: {src['name']}")
-            try:
-                resp = requests.get(src['url'], headers=self.scraper.headers, timeout=25)
-                resp.raise_for_status()
-                
-                # Use regex to find links and titles in XML to avoid namespace issues
-                content = resp.text
-                items = re.findall(r'<(item|entry).*?>(.*?)</\1>', content, re.DOTALL)
-                
-                for _, item_content in items:
-                    link_match = re.search(r'<link.*?>(.*?)</link>', item_content)
-                    if not link_match:
-                        link_match = re.search(r'<link.*?href="(.*?)"', item_content)
-                    
-                    title_match = re.search(r'<title.*?>(.*?)</title>', item_content)
-                    
-                    if not link_match or not title_match: continue
-                    
-                    link = link_match.group(1).strip()
-                    title = title_match.group(1).strip()
-                    # Clean title if it contains CDATA
-                    title = re.sub(r'<!\[CDATA\[(.*?)\]\]>', r'\1', title)
+        async for session in get_session():
+             # Get sources from DB if any
+            result = await session.execute(select(Source))
+            db_sources = result.scalars().all()
+            if db_sources:
+                 sources_to_use = db_sources
+            else:
+                 sources_to_use = sources_data # Fallback
 
-                    if self.registry.exists(link, title): continue
+            UI.info(f"Global Sync: {len(sources_to_use)} sources.")
+            
+            async with httpx.AsyncClient(timeout=25, follow_redirects=True, headers=self.scraper.headers) as client:
+                for src in sources_to_use:
+                    name = src.name if hasattr(src, 'name') else src['name']
+                    url = src.url if hasattr(src, 'url') else src['url']
                     
-                    article = self.scraper.scrape(link)
-                    if article:
-                        self._persist(article)
-                        self.registry.add(link, article.title)
-                        total_saved += 1
-                        UI.info(f"[{src['name']}] Caught: {article.title[:45]}...")
+                    UI.info(f"Target: {name}")
+                    try:
+                        resp = await client.get(url)
+                        resp.raise_for_status()
                         
-            except Exception as e:
-                UI.error(f"Source Failure ({src['name']}): {e}")
+                        content = resp.text
+                        items = re.findall(r'<(item|entry).*?>(.*?)</\1>', content, re.DOTALL)
+                        
+                        for _, item_content in items:
+                            link_match = re.search(r'<link.*?>(.*?)</link>', item_content)
+                            if not link_match:
+                                link_match = re.search(r'<link.*?href="(.*?)"', item_content)
+                            
+                            title_match = re.search(r'<title.*?>(.*?)</title>', item_content)
+                            
+                            if not link_match or not title_match: continue
+                            
+                            link = link_match.group(1).strip()
+                            
+                            # Check DB existence
+                            stmt = select(Article).where(Article.url == link)
+                            existing = (await session.execute(stmt)).scalars().first()
+                            if existing: continue
+                            
+                            # Scrape
+                            article = await self.scraper.scrape(client, link)
+                            if article:
+                                if hasattr(src, 'id'):
+                                    article.source_id = src.id
+                                session.add(article)
+                                await session.commit()
+                                UI.info(f"[{name}] Caught: {article.title[:45]}...")
+                                
+                    except Exception as e:
+                        UI.error(f"Source Failure ({name}): {e}")
 
-        UI.info(f"Sync complete. {total_saved} new entries.")
-
-    def _persist(self, article: NewsArticle):
-        os.makedirs(os.path.dirname(Config.REFERENCE_FILE_PATH), exist_ok=True)
-        with open(Config.REFERENCE_FILE_PATH, 'a', encoding='utf-8') as f:
-            f.write(article.model_dump_json(by_alias=True) + "\n")
-
-def run_collector():
-    sources = [
-        {"name": "G1 Tecnologia", "url": "https://g1.globo.com/rss/g1/tecnologia/"},
-        {"name": "BBC Brasil", "url": "https://feeds.bbci.co.uk/portuguese/rss.xml"},
-        {"name": "Tecnoblog", "url": "https://tecnoblog.net/feed/"},
-        {"name": "Tecmundo", "url": "https://rss.tecmundo.com.br/feed"},
-        {"name": "Olhar Digital", "url": "https://olhardigital.com.br/rss"},
-        {"name": "TudoCelular", "url": "https://www.tudocelular.com/feed/"},
-        {"name": "Canaltech", "url": "https://canaltech.com.br/rss/"},
-        {"name": "Inovação Tecnológica", "url": "https://www.inovacaotecnologica.com.br/boletim/rss.xml"}
-    ]
-    engine = RSSCollectorEngine(sources)
-    engine.run()
+async def run_collector():
+    engine = RSSCollectorEngine()
+    await engine.run()
 
 if __name__ == "__main__":
-    run_collector()
+    asyncio.run(run_collector())
