@@ -133,7 +133,7 @@ class RSSCollectorEngine:
     def __init__(self):
         self.scraper = ContentScraper()
 
-    async def run(self):
+    async def run(self, limit: int = None):
         # Fetch sources from DB or hardcoded fallback
         UI.info(f"Connecting to database...")
         
@@ -141,6 +141,9 @@ class RSSCollectorEngine:
             {"name": "G1", "url": "https://g1.globo.com/rss/g1/tecnologia/"},
             {"name": "BBC", "url": "https://feeds.bbci.co.uk/portuguese/rss.xml"},
             {"name": "Tecnoblog", "url": "https://tecnoblog.net/feed/"},
+            {"name": "TecMundo", "url": "https://rss.tecmundo.com.br/feed"},
+            {"name": "Olhar Digital", "url": "https://olhardigital.com.br/feed/"},
+            {"name": "TudoCelular", "url": "https://tudoceleular.com/feed/"},
              # Add other sources as needed or rely on DB sources
         ]
 
@@ -168,7 +171,11 @@ class RSSCollectorEngine:
                         content = resp.text
                         items = re.findall(r'<(item|entry).*?>(.*?)</\1>', content, re.DOTALL)
                         
+                        collected_count = 0
                         for _, item_content in items:
+                            if limit and collected_count >= limit:
+                                break
+                                
                             link_match = re.search(r'<link.*?>(.*?)</link>', item_content)
                             if not link_match:
                                 link_match = re.search(r'<link.*?href="(.*?)"', item_content)
@@ -192,13 +199,14 @@ class RSSCollectorEngine:
                                 session.add(article)
                                 await session.commit()
                                 UI.info(f"[{name}] Caught: {article.title[:45]}...")
+                                collected_count += 1
                                 
                     except Exception as e:
                         UI.error(f"Source Failure ({name}): {e}")
 
-async def run_collector():
+async def run_collector(limit: int = None):
     engine = RSSCollectorEngine()
-    await engine.run()
+    await engine.run(limit=limit)
 
 if __name__ == "__main__":
     asyncio.run(run_collector())

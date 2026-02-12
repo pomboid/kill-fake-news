@@ -195,7 +195,8 @@ def main():
     subparsers = parser.add_subparsers(dest="command", help="Operation Phases")
 
     # 1. Collect
-    subparsers.add_parser("collect", help="Phase 1: Scraping reference news (Gold Standard)")
+    parser_collect = subparsers.add_parser("collect", help="Phase 1: Scraping reference news (Gold Standard)")
+    parser_collect.add_argument("--limit", type=int, default=10, help="News per source")
     
     # 2. Analyze
     parser_analyze = subparsers.add_parser("analyze", help="Phase 2: Deep analysis of news for fake markers")
@@ -255,7 +256,7 @@ def main():
 
         elif args.command == "collect":
             UI.info("PHASE 1: COLLECTING REFERENCE NEWS")
-            run_collector()
+            asyncio.run(run_collector(limit=args.limit))
 
         elif args.command == "analyze":
             UI.info("PHASE 2: PERFORMING LINGUISTIC & FACTUAL ANALYSIS")
