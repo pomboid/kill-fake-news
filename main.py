@@ -235,24 +235,23 @@ def main():
 
     try:
         if args.command == "status":
-            UI.info("VORTEX SYSTEM STATUS")
-            
-            # Check JSONL rows
-            count = 0
-            if os.path.exists(Config.REFERENCE_FILE_PATH):
-                with open(Config.REFERENCE_FILE_PATH, 'r', encoding='utf-8') as f:
-                    count = sum(1 for line in f if line.strip())
-            
-            UI.highlight("Reference Articles (JSONL)", count)
-            
-            # Check Vector DB
-            engine = FactVerificationEngine()
-            try:
-                store = engine.db.get_store()
-                v_count = store._collection.count()
-                UI.highlight("Vector Database (Items)", v_count)
-            except Exception:
-                UI.warning("Vector Database: Not initialized or empty.")
+            async def show_status():
+                UI.info("VORTEX SYSTEM STATUS")
+                from core.database import get_session
+                from core.sql_models import Article, func, select
+                
+                async for session in get_session():
+                    # Count Articles
+                    res = await session.execute(select(func.count(Article.id)))
+                    count = res.one()[0]
+                    UI.highlight("Reference Articles (PostgreSQL)", count)
+                    
+                    # Count Vector Embeddings (approx via Articles with embedding)
+                    # res_vec = await session.execute(select(func.count(Article.id)).where(Article.embedding != None))
+                    # vec_count = res_vec.one()[0]
+                    # UI.highlight("Articles with Embeddings", vec_count)
+
+            asyncio.run(show_status())
 
         elif args.command == "collect":
             UI.info("PHASE 1: COLLECTING REFERENCE NEWS")
