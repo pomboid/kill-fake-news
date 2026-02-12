@@ -25,12 +25,15 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
+        - VITE_API_URL=${VITE_API_URL}
     container_name: vortex-frontend
     restart: unless-stopped
+    env_file:
+      - ./frontend/.env
     ports:
       - "80:80"
-    environment:
-      - VITE_API_URL=http://localhost:8420
     depends_on:
       - backend
     networks:
