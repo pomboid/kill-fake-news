@@ -169,10 +169,10 @@ class RSSCollectorEngine:
                         resp.raise_for_status()
                         
                         content = resp.text
-                        items = re.findall(r'<(item|entry).*?>(.*?)</\1>', content, re.DOTALL)
+                        UI.info(f"[{name}] Found {len(items)} items in RSS.")
                         
                         collected_count = 0
-                        for _, item_content in items:
+                        for i, (_, item_content) in enumerate(items):
                             if limit and collected_count >= limit:
                                 break
                                 
@@ -182,16 +182,22 @@ class RSSCollectorEngine:
                             
                             title_match = re.search(r'<title.*?>(.*?)</title>', item_content)
                             
-                            if not link_match or not title_match: continue
+                            if not link_match or not title_match: 
+                                # UI.warning(f"[{name}] Item {i} missing link/title. Content start: {item_content[:50]}")
+                                continue
                             
                             link = link_match.group(1).strip()
+                            # title = title_match.group(1).strip()
                             
                             # Check DB existence
                             stmt = select(Article).where(Article.url == link)
                             existing = (await session.execute(stmt)).scalars().first()
-                            if existing: continue
+                            if existing: 
+                                # UI.info(f"[{name}] Exists: {link}")
+                                continue
                             
                             # Scrape
+                            # UI.info(f"[{name}] Scraping: {link}")
                             article = await self.scraper.scrape(client, link)
                             if article:
                                 if hasattr(src, 'id'):
@@ -200,9 +206,9 @@ class RSSCollectorEngine:
                                 await session.commit()
                                 UI.info(f"[{name}] Caught: {article.title[:45]}...")
                                 collected_count += 1
-                                
-                    except Exception as e:
-                        UI.error(f"Source Failure ({name}): {e}")
+                            else:
+                                UI.warning(f"[{name}] Scrape rejected: {link} (short content/title or parse error)")
+                                pass
 
 async def run_collector(limit: int = None):
     engine = RSSCollectorEngine()
