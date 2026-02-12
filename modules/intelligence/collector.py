@@ -173,6 +173,7 @@ class RSSCollectorEngine:
                         resp.raise_for_status()
                         
                         content = resp.text
+                        items = re.findall(r'<(item|entry).*?>(.*?)</\1>', content, re.DOTALL)
                         UI.info(f"[{name}] Found {len(items)} items in RSS.")
                         
                         collected_count = 0
