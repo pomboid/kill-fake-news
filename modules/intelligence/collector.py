@@ -241,8 +241,8 @@ class RSSCollectorEngine:
 
                         UI.info(f"   🆕 {len(new_urls)} URLs novas para processar")
 
-                        # Processar em batches de 20 URLs em paralelo
-                        batch_size = 20
+                        # Processar em batches de 5 URLs em paralelo (reduzido para evitar timeout)
+                        batch_size = 5
                         articles_to_save = []
 
                         for i in range(0, len(new_urls), batch_size):
@@ -254,6 +254,9 @@ class RSSCollectorEngine:
                             # Scraping em PARALELO usando asyncio.gather
                             tasks = [self.scraper.scrape(client, url) for url in batch]
                             results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                            # Pequeno delay entre batches para não sobrecarregar
+                            await asyncio.sleep(0.5)
 
                             # Processar resultados
                             for url, result in zip(batch, results):
