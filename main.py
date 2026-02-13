@@ -11,14 +11,12 @@ from datetime import datetime
 os.environ["ANONYMIZED_TELEMETRY"] = "False"
 os.environ["GRPC_VERBOSITY"] = "ERROR"
 logging.getLogger("httpx").setLevel(logging.WARNING)
-logging.getLogger("chromadb").setLevel(logging.WARNING)
 logging.getLogger("google").setLevel(logging.ERROR)
 logging.getLogger("google_genai").setLevel(logging.ERROR)
 
 # Silence warnings before importing local modules
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
-warnings.filterwarnings("ignore", message=".*Chroma.*")
 
 from core.config import Config
 from core.ui import UI

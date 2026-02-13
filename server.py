@@ -19,7 +19,6 @@ os.environ["ANONYMIZED_TELEMETRY"] = "False"
 os.environ["GRPC_VERBOSITY"] = "ERROR"
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
-warnings.filterwarnings("ignore", message=".*Chroma.*")
 
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.responses import HTMLResponse, JSONResponse

@@ -32,8 +32,7 @@ WORKDIR /app
 COPY --chown=vortex:vortex . .
 
 # Create writable directories
-RUN mkdir -p /app/data/raw /app/data/analysis /app/data/chroma_db_reference \
-    /app/data/chroma_db_suspicious /app/logs \
+RUN mkdir -p /app/data/raw /app/data/analysis /app/logs \
     && chown -R vortex:vortex /app/data /app/logs
 
 # Switch to non-root user

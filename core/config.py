@@ -24,9 +24,6 @@ class Config:
     # --- Paths ---
     DATA_RAW_DIR = os.path.join("data", "raw")
     DATA_ANALYSIS_DIR = os.path.join("data", "analysis")
-    
-    CHROMA_PERSIST_DIR_REFERENCE = os.path.join("data", "chroma_db_reference")
-    CHROMA_PERSIST_DIR_SUSPICIOUS = os.path.join("data", "chroma_db_suspicious")
 
     # --- Files ---
     # Reference news (known to be true)
@@ -44,7 +41,3 @@ class Config:
     # --- Detection Configuration ---
     # Threshold for flagging a news as suspicious (0.0 to 1.0)
     SUSPICIOUS_THRESHOLD = 0.75
-
-    # --- Constants ---
-    COLLECTION_NAME_REFERENCE = "news_reference"
-    COLLECTION_NAME_SUSPICIOUS = "news_suspicious"
