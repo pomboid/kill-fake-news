@@ -45,3 +45,10 @@ coverage/
 # OS Files
 .DS_Store
 Thumbs.db
+
+# Claude Code
+.claude/
+
+# Temporary analysis files
+analysis_log.txt
+scripts/analyze_feeds_v2.py

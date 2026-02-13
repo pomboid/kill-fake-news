@@ -10,7 +10,7 @@ from datetime import datetime
 
 from sqlmodel import select
 from core.database import get_session
-from core.sql_models import Article, Source
+from core.sql_models import Article, Source, RSSFeed
 from core.ui import UI
 
 # Logging Setup
@@ -132,91 +132,135 @@ class ContentScraper:
         return "\n\n".join(text_blocks)
 
 class RSSCollectorEngine:
-    """Robust RSS Engine with DB storage."""
-    
+    """Robust RSS Engine with DB storage and multi-format support."""
+
     def __init__(self):
         self.scraper = ContentScraper()
 
+    def _parse_rss(self, content: str) -> List[str]:
+        """Parser para RSS 2.0 e RSS 0.91"""
+        items = re.findall(r'<item>(.*?)</item>', content, re.DOTALL)
+        urls = []
+        for item in items:
+            link_match = re.search(r'<link>(.*?)</link>', item, re.DOTALL)
+            if link_match:
+                url = link_match.group(1).strip()
+                # Remove CDATA tags if present
+                url = re.sub(r'<!\[CDATA\[(.*?)\]\]>', r'\1', url)
+                urls.append(url.strip())
+        return urls
+
+    def _parse_atom(self, content: str) -> List[str]:
+        """Parser para Atom feeds"""
+        entries = re.findall(r'<entry>(.*?)</entry>', content, re.DOTALL)
+        urls = []
+        for entry in entries:
+            # Atom uses <link href="..."/>
+            link_match = re.search(r'<link[^>]*href=["\']([^"\']+)["\']', entry)
+            if link_match:
+                urls.append(link_match.group(1).strip())
+        return urls
+
+    def _parse_sitemap(self, content: str) -> List[str]:
+        """Parser para News Sitemap XML (CNN Brasil)"""
+        urls_blocks = re.findall(r'<url>(.*?)</url>', content, re.DOTALL)
+        urls = []
+        for url_block in urls_blocks:
+            loc_match = re.search(r'<loc>(.*?)</loc>', url_block)
+            if loc_match:
+                urls.append(loc_match.group(1).strip())
+        return urls
+
     async def run(self, limit: int = None):
-        # Fetch sources from DB or hardcoded fallback
+        """Coleta notícias de todos os feeds ativos no banco de dados"""
         UI.info(f"Connecting to database...")
-        
-        sources_data = [
-            {"name": "G1", "url": "https://g1.globo.com/rss/g1/tecnologia/"},
-            {"name": "BBC", "url": "https://feeds.bbci.co.uk/portuguese/rss.xml"},
-            {"name": "Tecnoblog", "url": "https://tecnoblog.net/feed/"},
-            {"name": "TecMundo", "url": "https://rss.tecmundo.com.br/feed"},
-            {"name": "Olhar Digital", "url": "https://olhardigital.com.br/feed/"},
-            {"name": "TudoCelular", "url": "https://tudoceleular.com/feed/"},
-             # Add other sources as needed or rely on DB sources
-        ]
 
         async for session in get_session():
-             # Get sources from DB if any
-            result = await session.execute(select(Source))
-            db_sources = result.scalars().all()
-            if db_sources:
-                 sources_to_use = db_sources
-            else:
-                 sources_to_use = sources_data # Fallback
+            # Buscar todos os feeds ativos do banco de dados
+            statement = select(RSSFeed).join(Source).where(
+                RSSFeed.is_active == True,
+                Source.is_active == True
+            )
+            result = await session.execute(statement)
+            feeds = result.scalars().all()
 
-            UI.info(f"Global Sync: {len(sources_to_use)} sources.")
-            
-            async with httpx.AsyncClient(timeout=25, follow_redirects=True, headers=self.scraper.headers) as client:
-                for src in sources_to_use:
-                    name = src.name if hasattr(src, 'name') else src['name']
-                    url = src.url if hasattr(src, 'url') else src['url']
-                    
-                    UI.info(f"Target: {name}")
+            if not feeds:
+                UI.warning("⚠️  Nenhum feed ativo encontrado no banco de dados")
+                UI.warning("   Execute: python scripts/seed_rss_feeds.py")
+                return
+
+            UI.info(f"🔍 Coletando de {len(feeds)} feeds RSS ativos")
+
+            async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=self.scraper.headers) as client:
+                total_collected = 0
+
+                for feed in feeds:
+                    source_name = feed.source.name
+                    feed_category = feed.category or "Principal"
+
+                    UI.info(f"📡 [{source_name}] {feed_category}")
+
                     try:
-                        resp = await client.get(url)
+                        # Fetch feed content
+                        resp = await client.get(feed.feed_url, timeout=30)
                         resp.raise_for_status()
-                        
                         content = resp.text
-                        items = re.findall(r'<(item|entry).*?>(.*?)</\1>', content, re.DOTALL)
-                        UI.info(f"[{name}] Found {len(items)} items in RSS.")
-                        
-                        collected_count = 0
-                        for i, (_, item_content) in enumerate(items):
-                            if limit and collected_count >= limit:
+
+                        # Parse baseado no tipo de feed
+                        if feed.feed_type == "sitemap":
+                            article_urls = self._parse_sitemap(content)
+                        elif feed.feed_type == "atom":
+                            article_urls = self._parse_atom(content)
+                        else:  # rss2, rss091
+                            article_urls = self._parse_rss(content)
+
+                        UI.info(f"   Encontrados {len(article_urls)} artigos")
+
+                        # Processar artigos
+                        feed_collected_count = 0
+                        for article_url in article_urls:
+                            if limit and total_collected >= limit:
                                 break
-                                
-                            link_match = re.search(r'<link.*?>(.*?)</link>', item_content)
-                            if not link_match:
-                                link_match = re.search(r'<link.*?href="(.*?)"', item_content)
-                            
-                            title_match = re.search(r'<title.*?>(.*?)</title>', item_content)
-                            
-                            if not link_match or not title_match: 
-                                # UI.warning(f"[{name}] Item {i} missing link/title. Content start: {item_content[:50]}")
-                                continue
-                            
-                            link = link_match.group(1).strip()
-                            # title = title_match.group(1).strip()
-                            
-                            # Check DB existence
-                            stmt = select(Article).where(Article.url == link)
+
+                            # Verificar se artigo já existe
+                            stmt = select(Article).where(Article.url == article_url)
                             existing = (await session.execute(stmt)).scalars().first()
-                            if existing: 
-                                # UI.info(f"[{name}] Exists: {link}")
+                            if existing:
                                 continue
-                            
-                            # Scrape
-                            # UI.info(f"[{name}] Scraping: {link}")
-                            article = await self.scraper.scrape(client, link)
+
+                            # Fazer scraping do artigo completo
+                            article = await self.scraper.scrape(client, article_url)
                             if article:
-                                if hasattr(src, 'id'):
-                                    article.source_id = src.id
+                                article.source_id = feed.source_id
                                 session.add(article)
                                 await session.commit()
-                                UI.info(f"[{name}] Caught: {article.title[:45]}...")
-                                collected_count += 1
+                                UI.info(f"   ✅ {article.title[:50]}...")
+                                feed_collected_count += 1
+                                total_collected += 1
                             else:
-                                UI.warning(f"[{name}] Scrape rejected: {link} (short content/title or parse error)")
+                                # Artigo rejeitado (conteúdo curto ou erro de parse)
                                 pass
-                                
+
+                        # Atualizar estatísticas do feed
+                        feed.last_fetched = datetime.utcnow()
+                        feed.fetch_count += 1
+                        feed.error_count = 0
+                        feed.last_error = None
+                        await session.commit()
+
+                        if feed_collected_count > 0:
+                            UI.info(f"   📰 Coletados: {feed_collected_count} novos artigos")
+
                     except Exception as e:
-                        UI.error(f"Source Failure ({name}): {e}")
+                        logger.error(f"Erro ao coletar feed {feed.feed_url}: {e}")
+                        UI.error(f"   ❌ Erro: {str(e)[:80]}")
+
+                        # Atualizar contador de erros
+                        feed.error_count += 1
+                        feed.last_error = str(e)[:500]
+                        await session.commit()
+
+                UI.info(f"\n🎉 Coleta concluída! Total de artigos coletados: {total_collected}")
 
 async def run_collector(limit: int = None):
     engine = RSSCollectorEngine()

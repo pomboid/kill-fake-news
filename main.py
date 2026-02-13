@@ -231,6 +231,9 @@ def main():
     parser_export = subparsers.add_parser("export", help="Export analysis results as HTML report")
     parser_export.add_argument("--output", default="data/report.html", help="Output HTML path")
 
+    # 11. Seed RSS Feeds
+    subparsers.add_parser("seed-feeds", help="Populate database with RSS feed URLs from all sources")
+
     args = parser.parse_args()
 
     try:
@@ -372,6 +375,13 @@ def main():
             UI.info("EXPORTING HTML REPORT")
             path = _export_html(args.output)
             UI.info(f"Report saved to: {path}")
+
+        elif args.command == "seed-feeds":
+            # Populate database with RSS feeds
+            UI.info("POPULATING DATABASE WITH RSS FEEDS")
+            from scripts.seed_rss_feeds import seed_sources_and_feeds
+            asyncio.run(seed_sources_and_feeds())
+            UI.info("RSS feeds populated successfully!")
 
         else:
             parser.print_help()

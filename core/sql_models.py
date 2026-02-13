@@ -6,15 +6,42 @@ from pgvector.sqlalchemy import Vector
 
 # ─── Sources ─────────────────────────────────────────────────────
 class Source(SQLModel, table=True):
+    __tablename__ = "source"
+
     id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(index=True)
-    url: str
-    type: str = Field(default="rss")  # rss, scraper
-    status: str = Field(default="online")
+    name: str = Field(index=True, unique=True)  # "G1", "UOL", "Folha", etc.
+    display_name: str  # Nome para exibição no frontend
+    website_url: str  # Homepage da fonte
+    status: str = Field(default="online")  # "online" ou "offline"
     last_checked: Optional[datetime] = None
     is_active: bool = Field(default=True)
 
+    # Relacionamentos
+    feeds: List["RSSFeed"] = Relationship(back_populates="source", cascade_delete=True)
     articles: List["Article"] = Relationship(back_populates="source")
+
+# ─── RSS Feeds ───────────────────────────────────────────────────
+class RSSFeed(SQLModel, table=True):
+    __tablename__ = "rss_feed"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    source_id: int = Field(foreign_key="source.id", index=True)
+
+    feed_url: str = Field(unique=True, index=True)  # URL completa do RSS
+    feed_type: str = Field(default="rss2")  # "rss2", "rss091", "atom", "sitemap"
+    category: Optional[str] = None  # "tecnologia", "esportes", "política", etc.
+
+    is_active: bool = Field(default=True)
+    last_fetched: Optional[datetime] = None
+    fetch_count: int = Field(default=0)
+    error_count: int = Field(default=0)
+    last_error: Optional[str] = None
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relacionamentos
+    source: Source = Relationship(back_populates="feeds")
 
 # ─── Articles ────────────────────────────────────────────────────
 class Article(SQLModel, table=True):
