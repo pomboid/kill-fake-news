@@ -72,6 +72,9 @@ class ContentScraper:
             if date_str:
                 try:
                     pub_date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                    # Remove timezone info (PostgreSQL expects naive datetime)
+                    if pub_date and pub_date.tzinfo:
+                        pub_date = pub_date.replace(tzinfo=None)
                 except: pass
 
             return Article(
