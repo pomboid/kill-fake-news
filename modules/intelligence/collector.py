@@ -9,6 +9,7 @@ import httpx
 from datetime import datetime
 
 from sqlmodel import select
+from sqlalchemy.orm import selectinload
 from core.database import get_session
 from core.sql_models import Article, Source, RSSFeed
 from core.ui import UI
@@ -177,9 +178,11 @@ class RSSCollectorEngine:
 
         async for session in get_session():
             # Buscar todos os feeds ativos do banco de dados
-            statement = select(RSSFeed).join(Source).where(
-                RSSFeed.is_active == True,
-                Source.is_active == True
+            statement = (
+                select(RSSFeed)
+                .join(Source)
+                .where(RSSFeed.is_active == True, Source.is_active == True)
+                .options(selectinload(RSSFeed.source))
             )
             result = await session.execute(statement)
             feeds = result.scalars().all()
