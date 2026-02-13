@@ -194,7 +194,7 @@ def main():
 
     # 1. Collect
     parser_collect = subparsers.add_parser("collect", help="Phase 1: Scraping reference news (Gold Standard)")
-    parser_collect.add_argument("--limit", type=int, default=10, help="News per source")
+    parser_collect.add_argument("--limit", type=int, default=None, help="Max articles to collect (default: all)")
     
     # 2. Analyze
     parser_analyze = subparsers.add_parser("analyze", help="Phase 2: Deep analysis of news for fake markers")

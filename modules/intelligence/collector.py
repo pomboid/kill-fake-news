@@ -22,18 +22,33 @@ class ContentScraper:
     """Handles site-specific extraction for high-quality news content."""
     
     DOMAIN_MAP = {
-        "g1.globo.com": {"t": "h1.content-head__title", "s": "h2.content-head__subtitle", "b": "div.mc-article-body", "p": "p.content-text__container"},
+        # --- Fontes originais (seletores atualizados) ---
+        "g1.globo.com": {"t": "h1", "s": "h2.content-head__subtitle", "b": "div.mc-article-body", "p": "p"},
         "tecnoblog.net": {"t": "h1", "s": "p.excerpt", "b": "div.texts", "p": "p"},
-        "tecmundo.com.br": {"t": "h1.tec--article__header__title", "s": "div.tec--article__header__description", "b": "div.tec--article__body", "p": "p"},
-        "olhardigital.com.br": {"t": "h1.post-title", "s": "p.post-excerpt", "b": "div.post-content", "p": "p"},
-        "tudocelular.com": {"t": "h2.title_main", "s": "p.subtitle", "b": "div.text_content", "p": "p"},
-        "canaltech.com.br": {"t": "h1", "s": "div.c-card__title", "b": "div.c-body", "p": "p"},
+        "tecmundo.com.br": {"t": "h1", "s": None, "b": "div.tec--article__body", "p": "p"},
+        "olhardigital.com.br": {"t": "h1", "s": None, "b": "div.post-content", "p": "p"},
+        "tudocelular.com": {"t": "h1", "s": None, "b": "div.text_content", "p": "p"},
+        "canaltech.com.br": {"t": "h1", "s": None, "b": "div.c-body", "p": "p"},
         "inovacaotecnologica.com.br": {"t": "h1", "s": None, "b": "div#texto", "p": "p"},
         "bbc.com": {"t": "h1", "s": None, "b": "main", "p": "p"},
-        "folha.uol.com.br": {"t": "h1.c-content-head__title", "s": "h2.c-content-head__subtitle", "b": "div.c-news__body", "p": "p"},
-        "noticias.uol.com.br": {"t": "h1.pg-title", "s": "p.pg-subtitle", "b": "div.text", "p": "p"},
-        "cnnbrasil.com.br": {"t": "h1.post__title", "s": "p.post__excerpt", "b": "div.post__content", "p": "p"},
-        "estadao.com.br": {"t": "h1.n-title", "s": "h2.n-subtitle", "b": "div.n-content", "p": "p"}
+        "folha.uol.com.br": {"t": "h1", "s": "h2.c-content-head__subtitle", "b": "div.c-news__body", "p": "p"},
+        "noticias.uol.com.br": {"t": "h1", "s": None, "b": "div.text", "p": "p"},
+        "cnnbrasil.com.br": {"t": "h1", "s": None, "b": "div.post__content", "p": "p"},
+        "estadao.com.br": {"t": "h1", "s": None, "b": "div.n-content", "p": "p"},
+        # --- Novas fontes ---
+        "agenciabrasil.ebc.com.br": {"t": "h1", "s": None, "b": "article", "p": "p"},
+        "noticias.r7.com": {"t": "h1", "s": None, "b": "article", "p": "p"},
+        "r7.com": {"t": "h1", "s": None, "b": "article", "p": "p"},
+        "gazetadopovo.com.br": {"t": "h1", "s": None, "b": "article", "p": "p"},
+        "cartacapital.com.br": {"t": "h1", "s": None, "b": "div.entry-content", "p": "p"},
+        "theintercept.com": {"t": "h1", "s": None, "b": "div.post-content", "p": "p"},
+        "poder360.com.br": {"t": "h1", "s": None, "b": "article", "p": "p"},
+        "terra.com.br": {"t": "h1", "s": None, "b": "article", "p": "p"},
+        "infomoney.com.br": {"t": "h1", "s": None, "b": "article", "p": "p"},
+        "metropoles.com": {"t": "h1", "s": None, "b": "article", "p": "p"},
+        "correiobraziliense.com.br": {"t": "h1", "s": None, "b": "article", "p": "p"},
+        "jornaldebrasilia.com.br": {"t": "h1", "s": None, "b": "article", "p": "p"},
+        "brasildefato.com.br": {"t": "h1", "s": None, "b": "article", "p": "p"},
     }
 
     def __init__(self):
@@ -87,7 +102,7 @@ class ContentScraper:
                 created_at=datetime.utcnow()
             )
         except Exception as e:
-            # logger.warning(f"Scrape failed for {url}: {e}")
+            logger.warning(f"Scrape failed for {url}: {type(e).__name__}: {str(e)[:100]}")
             return None
 
     def _get_config(self, domain: str) -> dict:
@@ -122,9 +137,17 @@ class ContentScraper:
 
     def _extract_body(self, soup, config) -> str:
         container = soup.select_one(config["b"]) if config["b"] else None
+
+        # Fallback: tentar containers alternativos se o principal não existir
+        if not container:
+            for alt in ['article', 'main', 'div.post-content', 'div.article-body', 'div.entry-content', 'div.news-body', 'div.content']:
+                container = soup.select_one(alt)
+                if container:
+                    break
+
         if not container: return ""
-        
-        for noise in container.select('script, style, iframe, ul.post-tags, div.social-buttons, div.advertisement, aside'):
+
+        for noise in container.select('script, style, iframe, ul.post-tags, div.social-buttons, div.advertisement, aside, nav, header, footer'):
             noise.decompose()
 
         paragraphs = container.select(config["p"]) if config["p"] else container.find_all('p')
@@ -241,7 +264,7 @@ class RSSCollectorEngine:
 
                         UI.info(f"   🆕 {len(new_urls)} URLs novas para processar")
 
-                        # Processar em batches de 5 URLs em paralelo (reduzido para evitar timeout)
+                        # Processar em batches de 5 URLs em paralelo
                         batch_size = 5
                         articles_to_save = []
 
@@ -250,6 +273,8 @@ class RSSCollectorEngine:
                                 break
 
                             batch = new_urls[i:i+batch_size]
+                            batch_num = (i // batch_size) + 1
+                            total_batches = (len(new_urls) + batch_size - 1) // batch_size
 
                             # Scraping em PARALELO usando asyncio.gather
                             tasks = [self.scraper.scrape(client, url) for url in batch]
@@ -258,28 +283,42 @@ class RSSCollectorEngine:
                             # Pequeno delay entre batches para não sobrecarregar
                             await asyncio.sleep(0.5)
 
-                            # Processar resultados
+                            # Processar resultados com logging detalhado
+                            batch_ok = 0
+                            batch_fail = 0
+                            batch_exceptions = 0
                             for url, result in zip(batch, results):
                                 if limit and total_collected >= limit:
                                     break
 
                                 if isinstance(result, Exception):
+                                    batch_exceptions += 1
+                                    UI.warning(f"   ⚠️  Exception: {type(result).__name__}: {str(result)[:80]}")
                                     continue
 
                                 if result:  # Article object
                                     result.source_id = feed.source_id
                                     articles_to_save.append(result)
-                                    existing_urls.add(url)  # Adicionar ao set para evitar duplicatas no mesmo batch
+                                    existing_urls.add(url)
                                     UI.info(f"   ✅ {result.title[:50]}...")
                                     feed_collected_count += 1
                                     total_collected += 1
+                                    batch_ok += 1
+                                else:
+                                    batch_fail += 1
+
+                            UI.info(f"   📊 Batch {batch_num}/{total_batches}: {batch_ok} ok, {batch_fail} rejected, {batch_exceptions} errors")
 
                         # Commit em BATCH (não 1 por 1)
                         if articles_to_save:
-                            for article in articles_to_save:
-                                session.add(article)
-                            await session.commit()
-                            UI.info(f"   💾 Salvou {len(articles_to_save)} artigos no banco")
+                            try:
+                                for article in articles_to_save:
+                                    session.add(article)
+                                await session.commit()
+                                UI.info(f"   💾 Salvou {len(articles_to_save)} artigos no banco")
+                            except Exception as e:
+                                UI.error(f"   ❌ Erro ao salvar batch: {str(e)[:100]}")
+                                await session.rollback()
 
                         # Atualizar estatísticas do feed
                         feed.last_fetched = datetime.utcnow()
