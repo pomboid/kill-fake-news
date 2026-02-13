@@ -197,6 +197,13 @@ class RSSCollectorEngine:
 
             UI.info(f"🔍 Coletando de {len(feeds)} feeds RSS ativos")
 
+            # Carregar TODAS as URLs existentes no banco de uma vez (otimização)
+            UI.info(f"📦 Carregando URLs existentes do banco...")
+            existing_urls_stmt = select(Article.url)
+            existing_urls_result = await session.execute(existing_urls_stmt)
+            existing_urls = set(existing_urls_result.scalars().all())
+            UI.info(f"   {len(existing_urls)} URLs já estão no banco")
+
             async with httpx.AsyncClient(timeout=30, follow_redirects=True, headers=self.scraper.headers) as client:
                 total_collected = 0
 
@@ -222,30 +229,54 @@ class RSSCollectorEngine:
 
                         UI.info(f"   Encontrados {len(article_urls)} artigos")
 
-                        # Processar artigos
+                        # Processar artigos - OTIMIZADO
                         feed_collected_count = 0
-                        for article_url in article_urls:
+
+                        # Filtrar URLs novas (não duplicadas)
+                        new_urls = [url for url in article_urls if url not in existing_urls]
+
+                        if not new_urls:
+                            UI.info(f"   ℹ️  Todas as URLs já existem no banco (0 novas)")
+                            continue
+
+                        UI.info(f"   🆕 {len(new_urls)} URLs novas para processar")
+
+                        # Processar em batches de 20 URLs em paralelo
+                        batch_size = 20
+                        articles_to_save = []
+
+                        for i in range(0, len(new_urls), batch_size):
                             if limit and total_collected >= limit:
                                 break
 
-                            # Verificar se artigo já existe
-                            stmt = select(Article).where(Article.url == article_url)
-                            existing = (await session.execute(stmt)).scalars().first()
-                            if existing:
-                                continue
+                            batch = new_urls[i:i+batch_size]
 
-                            # Fazer scraping do artigo completo
-                            article = await self.scraper.scrape(client, article_url)
-                            if article:
-                                article.source_id = feed.source_id
+                            # Scraping em PARALELO usando asyncio.gather
+                            tasks = [self.scraper.scrape(client, url) for url in batch]
+                            results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                            # Processar resultados
+                            for url, result in zip(batch, results):
+                                if limit and total_collected >= limit:
+                                    break
+
+                                if isinstance(result, Exception):
+                                    continue
+
+                                if result:  # Article object
+                                    result.source_id = feed.source_id
+                                    articles_to_save.append(result)
+                                    existing_urls.add(url)  # Adicionar ao set para evitar duplicatas no mesmo batch
+                                    UI.info(f"   ✅ {result.title[:50]}...")
+                                    feed_collected_count += 1
+                                    total_collected += 1
+
+                        # Commit em BATCH (não 1 por 1)
+                        if articles_to_save:
+                            for article in articles_to_save:
                                 session.add(article)
-                                await session.commit()
-                                UI.info(f"   ✅ {article.title[:50]}...")
-                                feed_collected_count += 1
-                                total_collected += 1
-                            else:
-                                # Artigo rejeitado (conteúdo curto ou erro de parse)
-                                pass
+                            await session.commit()
+                            UI.info(f"   💾 Salvou {len(articles_to_save)} artigos no banco")
 
                         # Atualizar estatísticas do feed
                         feed.last_fetched = datetime.utcnow()
