@@ -267,12 +267,12 @@ def main():
         elif args.command == "index":
             UI.info("PHASE 3: INDEXING DATA FOR VERIFICATION")
             engine = FactVerificationEngine()
-            engine.index_documents()
+            asyncio.run(engine.index_documents())
 
         elif args.command == "verify":
             UI.info("PHASE 4: CROSS-REFERENCING CLAIM")
             engine = FactVerificationEngine()
-            report = engine.verify_claim(args.claim)
+            report = asyncio.run(engine.verify_claim(args.claim))
             
             print(f"\n{UI.C}AFIRMAÇÃO ANALISADA:{UI.RESET} {args.claim}")
             
