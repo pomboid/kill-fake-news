@@ -17,7 +17,7 @@ class Source(SQLModel, table=True):
     is_active: bool = Field(default=True)
 
     # Relacionamentos
-    feeds: List["RSSFeed"] = Relationship(back_populates="source", cascade_delete=True)
+    feeds: List["RSSFeed"] = Relationship(back_populates="source")
     articles: List["Article"] = Relationship(back_populates="source")
 
 # ─── RSS Feeds ───────────────────────────────────────────────────
