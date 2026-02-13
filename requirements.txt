@@ -2,7 +2,6 @@
 beautifulsoup4==4.12.3
 python-dotenv==1.0.1
 fastapi==0.109.2
-google-generativeai==0.8.3
 httpx==0.26.0
 pydantic==2.6.1
 python-multipart==0.0.9
@@ -10,6 +9,12 @@ requests==2.31.0
 slowapi==0.1.9
 uvicorn==0.27.1
 APScheduler==3.10.4
+
+# Multi-Provider AI Support
+google-generativeai==0.8.3
+groq==0.11.0
+openai==1.54.5
+anthropic==0.39.0
 
 # Database
 sqlmodel==0.0.14

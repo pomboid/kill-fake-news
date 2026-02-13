@@ -5,7 +5,6 @@ import re
 from datetime import datetime
 from typing import List, Optional
 
-import google.generativeai as genai
 from sqlmodel import select, col, text
 from sqlalchemy import func
 
@@ -13,27 +12,28 @@ from core.config import Config
 from core.database import get_session
 from core.sql_models import Article, Verification
 from core.ui import UI
+from core.llm import LLMManager
 
 logger = logging.getLogger("VORTEX.Verification")
 
 class FactVerificationEngine:
     """Uses RAG with semantic search (pgvector) to verify claims."""
-    
+
     def __init__(self):
         Config.require_api_key()
-        genai.configure(api_key=Config.GEMINI_API_KEY)
-        self.llm = genai.GenerativeModel(Config.LLM_MODEL_NAME)
-        self.embedding_model = Config.EMBEDDING_MODEL_NAME 
+
+        # Initialize multi-provider LLM manager
+        self.llm_manager = LLMManager(
+            enabled_providers=Config.ENABLED_PROVIDERS,
+            api_keys=Config.get_provider_api_keys(),
+            load_balance=Config.LOAD_BALANCE
+        ) 
 
     async def _generate_embedding(self, text: str) -> List[float]:
         try:
-            # truncate to avoid token limit if necessary, though model handles large context
-            result = await genai.embed_content_async(
-                model=self.embedding_model,
-                content=text[:9000],
-                task_type="retrieval_document"
-            )
-            return result['embedding']
+            # Use LLMManager with automatic failover
+            embedding = await self.llm_manager.get_embedding(text[:9000])
+            return embedding
         except Exception as e:
             logger.error(f"Embedding generation failed: {e}")
             return []
@@ -70,15 +70,10 @@ class FactVerificationEngine:
 
     async def verify_claim(self, claim: str, user_id: str = "default") -> dict:
         """Cross-references a claim against the DB using pgvector search."""
-        
+
         # 1. Generate claim embedding
         try:
-            claim_embedding_result = await genai.embed_content_async(
-                model=self.embedding_model,
-                content=claim,
-                task_type="retrieval_query"
-            )
-            claim_vec = claim_embedding_result['embedding']
+            claim_vec = await self.llm_manager.get_embedding(claim)
         except Exception as e:
             return {"veredito": "ERRO", "analise": f"Falha ao gerar embedding: {e}", "confianca": 0, "evidencias": []}
 
@@ -124,11 +119,7 @@ class FactVerificationEngine:
         """
         
         try:
-            response = await self.llm.generate_content_async(
-                prompt,
-                generation_config=genai.GenerationConfig(response_mime_type="application/json")
-            )
-            result = json.loads(response.text)
+            result = await self.llm_manager.generate_json(prompt)
         except Exception as e:
             logger.error(f"LLM Verification failed: {e}")
             result = {

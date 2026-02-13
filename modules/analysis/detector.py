@@ -2,70 +2,55 @@ import asyncio
 import logging
 import json
 from typing import List, Optional
-import google.generativeai as genai
 from sqlmodel import select, col
 from core.config import Config
 from core.database import get_session
 from core.sql_models import Article, Analysis
 from core.models import FakeNewsDetection, DetectionScores
 from core.ui import UI
+from core.llm import LLMManager
 
 logger = logging.getLogger("VORTEX.Detector")
 
 class NewsDetector:
     """Analyzes news articles for signs of misinformation using LLM."""
-    
+
     def __init__(self):
         Config.require_api_key()
-        genai.configure(api_key=Config.GEMINI_API_KEY)
-        self.model = genai.GenerativeModel(Config.LLM_MODEL_NAME)
+
+        # Initialize multi-provider LLM manager
+        self.llm_manager = LLMManager(
+            enabled_providers=Config.ENABLED_PROVIDERS,
+            api_keys=Config.get_provider_api_keys(),
+            load_balance=Config.LOAD_BALANCE
+        )
 
     async def analyze_article(self, article: Article) -> FakeNewsDetection:
         prompt = f"""
         Analyze the following news article for potential misinformation, fake news markers, and bias.
-        
+
         TITLE: {article.title}
         CONTENT: {article.content[:5000]}
-        
-        Evaluate and return:
-        - is_fake: whether the article is fake news
-        - confidence_score: your confidence (0.0 to 1.0)
-        - reasoning: brief explanation
-        - detected_markers: list of markers found (e.g., "sensationalist headline", "lack of sources")
-        - scores: factual_consistency, linguistic_bias, sensationalism, source_credibility (each 0-10)
+
+        Respond ONLY with valid JSON in this exact format:
+        {{
+            "is_fake": boolean,
+            "confidence_score": number (0.0 to 1.0),
+            "reasoning": "brief explanation",
+            "detected_markers": ["marker1", "marker2"],
+            "scores": {{
+                "factual_consistency": integer (0-10),
+                "linguistic_bias": integer (0-10),
+                "sensationalism": integer (0-10),
+                "source_credibility": integer (0-10)
+            }}
+        }}
         """
         
-        response_schema = {
-            "type": "object",
-            "properties": {
-                "is_fake": {"type": "boolean"},
-                "confidence_score": {"type": "number"},
-                "reasoning": {"type": "string"},
-                "detected_markers": {"type": "array", "items": {"type": "string"}},
-                "scores": {
-                    "type": "object",
-                    "properties": {
-                        "factual_consistency": {"type": "integer"},
-                        "linguistic_bias": {"type": "integer"},
-                        "sensationalism": {"type": "integer"},
-                        "source_credibility": {"type": "integer"}
-                    },
-                    "required": ["factual_consistency", "linguistic_bias", "sensationalism", "source_credibility"]
-                }
-            },
-            "required": ["is_fake", "confidence_score", "reasoning", "detected_markers", "scores"]
-        }
-        
         try:
-            # Async generation
-            response = await self.model.generate_content_async(
-                prompt,
-                generation_config=genai.GenerationConfig(
-                    response_mime_type="application/json",
-                    response_schema=response_schema
-                )
-            )
-            data = json.loads(response.text)
+            # Use LLMManager with automatic failover
+            # Note: response_schema is Gemini-specific, other providers rely on prompt engineering
+            data = await self.llm_manager.generate_json(prompt)
             return FakeNewsDetection(**data)
         except Exception as e:
             logger.error(f"Analysis failed for article {article.id}: {e}")
