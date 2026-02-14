@@ -1,8 +1,8 @@
 import asyncio
 import logging
-import json
-from typing import List, Optional
-from sqlmodel import select, col
+import time
+from typing import Optional
+from sqlmodel import select
 from core.config import Config
 from core.database import get_session
 from core.sql_models import Article, Analysis
@@ -11,6 +11,10 @@ from core.ui import UI
 from core.llm import LLMManager
 
 logger = logging.getLogger("VORTEX.Detector")
+
+# Concurrency: 5 simultaneous requests (OpenAI gpt-4o-mini: 500 RPM, 200K TPM)
+ANALYZE_CONCURRENCY = 5
+
 
 class NewsDetector:
     """Analyzes news articles for signs of misinformation using LLM."""
@@ -46,10 +50,9 @@ class NewsDetector:
             }}
         }}
         """
-        
+
         try:
             # Use LLMManager with automatic failover
-            # Note: response_schema is Gemini-specific, other providers rely on prompt engineering
             data = await self.llm_manager.generate_json(prompt)
             return FakeNewsDetection(**data)
         except Exception as e:
@@ -68,41 +71,73 @@ class NewsDetector:
 
         async for session in get_session():
             # Fetch unanalyzed articles
-            # Left join Analysis, filter where Analysis.id is NULL
             stmt = select(Article).outerjoin(Analysis, Article.id == Analysis.article_id).where(Analysis.id == None)
             if limit:
                 stmt = stmt.limit(limit)
             result = await session.execute(stmt)
             articles = result.scalars().all()
-            
+
             if not articles:
                 UI.info("No unanalyzed articles found.")
                 return
 
-            UI.info(f"Found {len(articles)} articles to analyze.")
-            
-            for article in articles:
-                UI.info(f"Analyzing: {article.title[:40]}...")
-                
-                # Analyze
-                detection = await self.analyze_article(article)
-                
-                # Save to DB
-                analysis = Analysis(
-                    article_id=article.id,
-                    is_fake=detection.is_fake,
-                    confidence=detection.confidence_score,
-                    reasoning=detection.reasoning,
-                    markers=detection.detected_markers,
-                    scores=detection.scores.model_dump()
-                )
-                session.add(analysis)
-                await session.commit()
-                
-                UI.info(f"Saved analysis for article {article.id}")
-                
-                # Rate limit (2s delay)
-                await asyncio.sleep(2.0)
+            total = len(articles)
+            UI.info(f"Found {total} articles to analyze (concurrency={ANALYZE_CONCURRENCY}).")
+
+            # Progress tracking
+            completed = 0
+            errors = 0
+            start_time = time.time()
+            semaphore = asyncio.Semaphore(ANALYZE_CONCURRENCY)
+
+            async def analyze_one(article: Article):
+                nonlocal completed, errors
+                async with semaphore:
+                    detection = await self.analyze_article(article)
+
+                    # Save to DB using a new session for thread safety
+                    async for save_session in get_session():
+                        analysis = Analysis(
+                            article_id=article.id,
+                            is_fake=detection.is_fake,
+                            confidence=detection.confidence_score,
+                            reasoning=detection.reasoning,
+                            markers=detection.detected_markers,
+                            scores=detection.scores.model_dump()
+                        )
+                        save_session.add(analysis)
+                        await save_session.commit()
+
+                    completed += 1
+                    elapsed = time.time() - start_time
+                    rate = completed / elapsed if elapsed > 0 else 0
+                    remaining = (total - completed) / rate if rate > 0 else 0
+                    remaining_min = remaining / 60
+
+                    if detection.reasoning and "Error" in detection.reasoning:
+                        errors += 1
+
+                    UI.info(
+                        f"[{completed}/{total}] "
+                        f"({100 * completed // total}%) "
+                        f"{article.title[:35]}... "
+                        f"| {rate:.1f}/s | ETA: {remaining_min:.1f}min"
+                    )
+
+                    # Small delay to respect rate limits
+                    await asyncio.sleep(0.3)
+
+            # Process all articles concurrently with semaphore
+            tasks = [analyze_one(article) for article in articles]
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+            elapsed_total = time.time() - start_time
+            UI.info(
+                f"Analysis complete: {completed}/{total} articles "
+                f"({errors} errors) in {elapsed_total / 60:.1f} minutes "
+                f"({completed / elapsed_total:.1f} articles/sec)"
+            )
+
 
 if __name__ == "__main__":
     detector = NewsDetector()
