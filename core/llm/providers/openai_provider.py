@@ -1,9 +1,10 @@
 """OpenAI Provider - GPT models"""
 
+import asyncio
 import json
 import logging
 from typing import Optional, Dict, Any, List
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, RateLimitError
 
 from ..base import LLMProvider, EmbeddingProvider
 
@@ -55,22 +56,34 @@ class OpenAIProvider(LLMProvider, EmbeddingProvider):
         temperature: float = 0.7,
         max_tokens: Optional[int] = None
     ) -> str:
-        """Generate text using OpenAI"""
-        try:
-            response = await self.client.chat.completions.create(
-                model=model or self.default_model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
+        """Generate text using OpenAI with retry on rate limits"""
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                response = await self.client.chat.completions.create(
+                    model=model or self.default_model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=temperature,
+                    max_tokens=max_tokens
+                )
 
-            self.mark_success()
-            return response.choices[0].message.content
+                self.mark_success()
+                return response.choices[0].message.content
 
-        except Exception as e:
-            self.mark_failure(e)
-            logger.error(f"OpenAI text generation failed: {e}")
-            raise
+            except RateLimitError as e:
+                if attempt < max_retries - 1:
+                    wait = min(2 ** attempt * 0.5, 30)
+                    logger.debug(f"Rate limited, waiting {wait}s (attempt {attempt+1}/{max_retries})")
+                    await asyncio.sleep(wait)
+                else:
+                    self.mark_failure(e)
+                    logger.error(f"OpenAI text generation failed after {max_retries} retries: {e}")
+                    raise
+
+            except Exception as e:
+                self.mark_failure(e)
+                logger.error(f"OpenAI text generation failed: {e}")
+                raise
 
     async def generate_json(
         self,
@@ -78,39 +91,63 @@ class OpenAIProvider(LLMProvider, EmbeddingProvider):
         model: Optional[str] = None,
         temperature: float = 0.7
     ) -> Dict[str, Any]:
-        """Generate JSON using OpenAI"""
-        try:
-            response = await self.client.chat.completions.create(
-                model=model or self.default_model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-                response_format={"type": "json_object"}
-            )
+        """Generate JSON using OpenAI with retry on rate limits"""
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                response = await self.client.chat.completions.create(
+                    model=model or self.default_model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=temperature,
+                    response_format={"type": "json_object"}
+                )
 
-            self.mark_success()
-            return json.loads(response.choices[0].message.content)
+                self.mark_success()
+                return json.loads(response.choices[0].message.content)
 
-        except Exception as e:
-            self.mark_failure(e)
-            logger.error(f"OpenAI JSON generation failed: {e}")
-            raise
+            except RateLimitError as e:
+                if attempt < max_retries - 1:
+                    wait = min(2 ** attempt * 0.5, 30)
+                    logger.debug(f"Rate limited, waiting {wait}s (attempt {attempt+1}/{max_retries})")
+                    await asyncio.sleep(wait)
+                else:
+                    self.mark_failure(e)
+                    logger.error(f"OpenAI JSON generation failed after {max_retries} retries: {e}")
+                    raise
+
+            except Exception as e:
+                self.mark_failure(e)
+                logger.error(f"OpenAI JSON generation failed: {e}")
+                raise
 
     async def get_embedding(
         self,
         text: str,
         model: Optional[str] = None
     ) -> List[float]:
-        """Generate embedding using OpenAI"""
-        try:
-            response = await self.client.embeddings.create(
-                model=model or self.default_embedding_model,
-                input=text[:8000]
-            )
+        """Generate embedding using OpenAI with retry on rate limits"""
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                response = await self.client.embeddings.create(
+                    model=model or self.default_embedding_model,
+                    input=text[:8000]
+                )
 
-            self.mark_success()
-            return response.data[0].embedding
+                self.mark_success()
+                return response.data[0].embedding
 
-        except Exception as e:
-            self.mark_failure(e)
-            logger.error(f"OpenAI embedding failed: {e}")
-            raise
+            except RateLimitError as e:
+                if attempt < max_retries - 1:
+                    wait = min(2 ** attempt * 0.5, 30)  # 0.5s, 1s, 2s, 4s, 8s
+                    logger.debug(f"Rate limited, waiting {wait}s (attempt {attempt+1}/{max_retries})")
+                    await asyncio.sleep(wait)
+                else:
+                    self.mark_failure(e)
+                    logger.error(f"OpenAI embedding failed after {max_retries} retries: {e}")
+                    raise
+
+            except Exception as e:
+                self.mark_failure(e)
+                logger.error(f"OpenAI embedding failed: {e}")
+                raise

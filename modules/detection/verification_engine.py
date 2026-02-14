@@ -14,8 +14,9 @@ from core.llm import LLMManager
 
 logger = logging.getLogger("VORTEX.Verification")
 
-# Concurrency: 10 simultaneous requests (OpenAI text-embedding-3-small: 3K RPM, 1M TPM)
-INDEX_CONCURRENCY = 10
+# Concurrency: 5 simultaneous requests (OpenAI text-embedding-3-small: 3K RPM, 1M TPM)
+# With retry backoff on 429, this naturally throttles to stay under limits
+INDEX_CONCURRENCY = 5
 
 class FactVerificationEngine:
     """Uses RAG with semantic search (pgvector) to verify claims."""
@@ -93,8 +94,8 @@ class FactVerificationEngine:
                         f"| {rate:.1f}/s | ETA: {remaining_min:.1f}min"
                     )
 
-                    # Small delay to respect rate limits
-                    await asyncio.sleep(0.1)
+                    # Delay to respect rate limits (TPM)
+                    await asyncio.sleep(0.3)
 
             # Process all articles concurrently with semaphore
             tasks = [index_one(article) for article in articles]

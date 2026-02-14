@@ -78,16 +78,16 @@ class LLMProvider(ABC):
         self.status = ProviderStatus.ACTIVE
 
     def mark_failure(self, error: Exception):
-        """Mark a failed request"""
+        """Mark a failed request. Disables provider after 3 consecutive failures."""
         self.error_count += 1
         self.last_error = str(error)
 
-        # Disable immediately on first failure to avoid wasting time on broken providers
-        self.status = ProviderStatus.FAILED
+        if self.error_count >= 3:
+            self.status = ProviderStatus.FAILED
 
     def is_available(self) -> bool:
         """Check if provider is available"""
-        return self.status == ProviderStatus.ACTIVE and self.api_key is not None
+        return self.status in (ProviderStatus.ACTIVE, ProviderStatus.RATE_LIMITED) and self.api_key is not None
 
 
 class EmbeddingProvider(ABC):
@@ -134,13 +134,13 @@ class EmbeddingProvider(ABC):
         self.status = ProviderStatus.ACTIVE
 
     def mark_failure(self, error: Exception):
-        """Mark a failed request"""
+        """Mark a failed request. Disables provider after 3 consecutive failures."""
         self.error_count += 1
         self.last_error = str(error)
 
-        # Disable immediately on first failure to avoid wasting time on broken providers
-        self.status = ProviderStatus.FAILED
+        if self.error_count >= 3:
+            self.status = ProviderStatus.FAILED
 
     def is_available(self) -> bool:
         """Check if provider is available"""
-        return self.status == ProviderStatus.ACTIVE and self.api_key is not None
+        return self.status in (ProviderStatus.ACTIVE, ProviderStatus.RATE_LIMITED) and self.api_key is not None
