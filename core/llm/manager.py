@@ -7,10 +7,8 @@ import random
 from typing import List, Optional, Dict, Any, Type
 
 from .base import LLMProvider, EmbeddingProvider, ProviderStatus
-from .providers.groq_provider import GroqProvider
-from .providers.gemini_provider import GeminiProvider
 from .providers.openai_provider import OpenAIProvider
-from .providers.anthropic_provider import AnthropicProvider
+from .providers.gemini_provider import GeminiProvider
 from .embedding_adapter import adapt_embedding
 
 logger = logging.getLogger("VORTEX.LLM.Manager")
@@ -51,16 +49,11 @@ class LLMManager:
         self.embedding_providers: List[EmbeddingProvider] = []
 
         # Initialize providers in priority order
-        # OpenAI first for embeddings (reliable, 1536 dims native)
-        # Gemini backup for embeddings (free, 768 dims adapted to 1536)
+        # OpenAI first (reliable, 1536 dims native)
+        # Gemini backup (free, 768 dims adapted to 1536)
         provider_classes = [
-            # Text generation (no embeddings)
-            (GroqProvider, 'groq'),           # Priority 1: FREE text, fast
-            # Embeddings + Text
-            (OpenAIProvider, 'openai'),       # Priority 2: Paid embeddings (1536), reliable
-            (GeminiProvider, 'gemini'),       # Priority 3: FREE embeddings (768→1536), backup
-            # Text generation only (backup)
-            (AnthropicProvider, 'anthropic'), # Priority 4: Paid text, high quality
+            (OpenAIProvider, 'openai'),       # Priority 1: Paid embeddings (1536) + text
+            (GeminiProvider, 'gemini'),       # Priority 2: FREE embeddings (768→1536) + text backup
         ]
 
         for provider_class, provider_name in provider_classes:

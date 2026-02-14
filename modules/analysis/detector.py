@@ -62,13 +62,16 @@ class NewsDetector:
                 scores=DetectionScores(factual_consistency=5, linguistic_bias=5, sensationalism=5, source_credibility=5)
             )
 
-    async def run_batch_analysis(self, limit: int = 3):
-        UI.info(f"Checking for unanalyzed articles (limit={limit})...")
-        
+    async def run_batch_analysis(self, limit: Optional[int] = None):
+        limit_msg = f"limit={limit}" if limit else "all"
+        UI.info(f"Checking for unanalyzed articles ({limit_msg})...")
+
         async for session in get_session():
             # Fetch unanalyzed articles
             # Left join Analysis, filter where Analysis.id is NULL
-            stmt = select(Article).outerjoin(Analysis, Article.id == Analysis.article_id).where(Analysis.id == None).limit(limit)
+            stmt = select(Article).outerjoin(Analysis, Article.id == Analysis.article_id).where(Analysis.id == None)
+            if limit:
+                stmt = stmt.limit(limit)
             result = await session.execute(stmt)
             articles = result.scalars().all()
             

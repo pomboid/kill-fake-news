@@ -198,7 +198,7 @@ def main():
     
     # 2. Analyze
     parser_analyze = subparsers.add_parser("analyze", help="Phase 2: Deep analysis of news for fake markers")
-    parser_analyze.add_argument("--limit", type=int, default=5, help="Number of articles to analyze")
+    parser_analyze.add_argument("--limit", type=int, default=None, help="Number of articles to analyze (default: all)")
 
     # 3. Index
     subparsers.add_parser("index", help="Phase 3: Indexing reference news for fact-checking")
@@ -216,7 +216,7 @@ def main():
 
     # 7. Full Pipeline (#2)
     parser_pipeline = subparsers.add_parser("full-pipeline", help="Run collect → analyze → index in sequence")
-    parser_pipeline.add_argument("--limit", type=int, default=5, help="Analyze limit")
+    parser_pipeline.add_argument("--limit", type=int, default=None, help="Analyze limit (default: all)")
 
     # 8. Batch Verify (#14)
     parser_batch = subparsers.add_parser("batch-verify", help="Verify multiple claims from a file")

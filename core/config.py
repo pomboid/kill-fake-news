@@ -5,16 +5,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    # --- Multi-Provider AI Configuration ---
-    # API Keys for different providers
-    GROQ_API_KEY = os.getenv("GROQ_API_KEY")                                  # FREE text generation
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")  # FREE embeddings (768 dims)
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")                              # Paid embeddings (1536 dims)
-    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")                        # Paid text generation
+    # --- AI Provider Configuration ---
+    # API Keys (OpenAI primary + Gemini backup)
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")                              # Paid embeddings (1536 dims) + text
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")  # FREE embeddings (768 dims) + text
 
     # Enabled providers (in priority order for failover)
-    # OpenAI first for embeddings (reliable), Gemini backup (free)
-    ENABLED_PROVIDERS = os.getenv("ENABLED_PROVIDERS", "groq,openai,gemini,anthropic").split(",")
+    ENABLED_PROVIDERS = os.getenv("ENABLED_PROVIDERS", "openai,gemini").split(",")
 
     # Load balancing: if True, distributes requests round-robin; if False, always tries in priority order
     LOAD_BALANCE = os.getenv("LOAD_BALANCE", "false").lower() == "true"
@@ -23,10 +20,8 @@ class Config:
     def get_provider_api_keys(cls) -> dict:
         """Get all configured API keys"""
         return {
-            "groq": cls.GROQ_API_KEY,        # FREE text generation
-            "openai": cls.OPENAI_API_KEY,    # Paid embeddings (primary)
-            "gemini": cls.GEMINI_API_KEY,    # FREE embeddings (backup)
-            "anthropic": cls.ANTHROPIC_API_KEY,  # Paid text generation
+            "openai": cls.OPENAI_API_KEY,    # Paid embeddings (1536d, primary) + text
+            "gemini": cls.GEMINI_API_KEY,    # FREE embeddings (768d→1536d, backup) + text
         }
 
     @classmethod
@@ -37,12 +32,11 @@ class Config:
             raise SystemExit(
                 "\n[ERRO FATAL] Nenhuma chave de API configurada.\n"
                 "Configure pelo menos uma das variáveis de ambiente:\n"
-                "  - GROQ_API_KEY (GRATUITO, recomendado)\n"
-                "  - GEMINI_API_KEY ou GOOGLE_API_KEY (FREE tier)\n"
-                "  - OPENAI_API_KEY (Freemium)\n"
-                "  - ANTHROPIC_API_KEY (Freemium)\n\n"
+                "  - OPENAI_API_KEY (Recomendado, embeddings 1536d)\n"
+                "  - GEMINI_API_KEY ou GOOGLE_API_KEY (FREE tier)\n\n"
                 "Crie um arquivo .env na raiz do projeto com:\n"
-                "  GROQ_API_KEY=sua_chave_aqui\n"
+                "  OPENAI_API_KEY=sk-...\n"
+                "  GEMINI_API_KEY=AIzaSy...\n"
             )
 
     # --- Paths ---

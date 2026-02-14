@@ -13,13 +13,13 @@
   <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" alt="React"/>
   <img src="https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi&logoColor=white" alt="FastAPI"/>
   <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL"/>
-  <img src="https://img.shields.io/badge/AI_Providers-4-FF6B6B?logo=openai&logoColor=white" alt="4 AI Providers"/>
+  <img src="https://img.shields.io/badge/AI_Providers-2-FF6B6B?logo=openai&logoColor=white" alt="2 AI Providers"/>
   <img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker"/>
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License"/>
 </p>
 
 <p align="center">
-  <em>Detecte, analise e verifique notícias falsas automaticamente usando 4 provedores de IA com failover automático</em>
+  <em>Detecte, analise e verifique notícias falsas automaticamente usando OpenAI + Gemini com failover automático</em>
 </p>
 
 ---
@@ -29,7 +29,7 @@
 O **VORTEX** (Verification & Observation of Real-Time EXploits) é um sistema completo de defesa cognitiva contra desinformação baseado em **RAG (Retrieval-Augmented Generation)**. Em termos simples:
 
 1. 🤖 O sistema **coleta notícias** automaticamente de portais confiáveis via RSS/scraping
-2. 🧠 Usa **4 provedores de IA diferentes** (Groq, Gemini, OpenAI, Anthropic) com failover automático
+2. 🧠 Usa **OpenAI + Gemini** com failover automático (OpenAI primário, Gemini backup gratuito)
 3. 🔍 Permite que **você cole qualquer texto ou afirmação** e o sistema verifica se é verdadeiro, falso ou inconclusivo
 4. 📊 Mostra tudo em um **painel visual moderno** com estatísticas em tempo real
 
@@ -37,68 +37,44 @@ O **VORTEX** (Verification & Observation of Real-Time EXploits) é um sistema co
 
 ---
 
-## 🤖 4 Provedores de IA com Failover Automático
+## 🤖 2 Provedores de IA com Failover Automático
 
-O VORTEX suporta **4 provedores de IA**, proporcionando **resiliência e flexibilidade**:
+O VORTEX usa **OpenAI como primário** e **Gemini como backup gratuito**:
 
-### 🟢 FREE (Recomendado para começar)
+| # | Provider | Texto | Embeddings | Custo | API Key |
+|---|----------|-------|------------|-------|---------|
+| 1 | **OpenAI** ⭐ | GPT-4o, GPT-4o-mini | ✅ 1536d (nativo) | ~$0.50/mês | [Obter Key](https://platform.openai.com/api-keys) |
+| 2 | **Gemini** | Gemini 2.0 Flash | ✅ 768d (adaptado→1536d) | FREE | [Obter Key](https://aistudio.google.com/apikey) |
 
-| # | Provider | Modelos | Embeddings | API Key |
-|---|----------|---------|------------|---------|
-| 1 | **Groq** ⭐ | Llama 3.3 70B, Gemma 2 9B, Mixtral 8x7B, Qwen 2.5 7B | ❌ | [Obter Key](https://console.groq.com/keys) |
-| 2 | **Gemini** | Gemini 2.0 Flash, Gemini 1.5 Pro, Gemini 1.5 Flash | ✅ 768d | [Obter Key](https://aistudio.google.com/apikey) |
+### ✨ Benefícios
 
-### 🟡 Paid (Opcional para maior qualidade)
-
-| # | Provider | Modelos | Embeddings | API Key |
-|---|----------|---------|------------|---------|
-| 3 | **OpenAI** ⭐ | GPT-4o, GPT-4o-mini, text-embedding-3-small | ✅ 1536d | [Obter Key](https://platform.openai.com/api-keys) |
-| 4 | **Anthropic** | Claude 3.5 Sonnet, Claude 3.5 Haiku | ❌ | [Obter Key](https://console.anthropic.com/account/keys) |
-
-### ✨ Benefícios do Sistema Multi-Provider
-
-- ✅ **Failover Automático**: Se um provedor falhar, tenta automaticamente o próximo
-- ✅ **100% Gratuito**: Funciona completamente com Groq + Gemini (ambos FREE)
-- ✅ **Embeddings de Alta Qualidade**: OpenAI 1536d (pago, ~$0.50/mês) ou Gemini 768d (grátis)
-- ✅ **Máxima Resiliência**: 4 opções confiáveis de backup
-- ✅ **Custo Acessível**: $10 na OpenAI duram 20+ meses para embeddings
+- ✅ **Failover Automático**: Se OpenAI falhar, usa Gemini automaticamente
+- ✅ **Embeddings 1536d**: OpenAI nativo, Gemini adaptado via padding
+- ✅ **Custo Acessível**: $10 na OpenAI duram 20+ meses
+- ✅ **Backup Gratuito**: Gemini funciona sem custo adicional
 
 ---
 
 ## 🚀 Começando em 5 Minutos
 
-### 1️⃣ Obter API Keys (Escolha pelo menos 1)
+### 1️⃣ Obter API Keys
 
-**Recomendado para começar (100% GRÁTIS):**
+1. **OpenAI** (Recomendado): https://platform.openai.com/api-keys
+   - Adicione $10 de crédito (dura 20+ meses)
+   - Embeddings de alta qualidade (1536 dimensões)
 
-1. **Groq** (FREE, ilimitado): https://console.groq.com/keys
-   - Cadastro instantâneo com email
-   - Modelos ultra-rápidos (Llama 3.3 70B)
-
-2. **Gemini** (FREE, 1M tokens/min): https://aistudio.google.com/apikey
+2. **Gemini** (FREE, backup): https://aistudio.google.com/apikey
    - Login com conta Google
-   - Inclui embeddings (768 dimensões)
+   - Backup gratuito para embeddings e texto
 
 ### 2️⃣ Configurar o .env
 
 Crie um arquivo `.env` na raiz do projeto:
 
 ```bash
-# Opção 1: APENAS Groq (mais simples, FREE)
-GROQ_API_KEY=gsk_sua_chave_aqui
-
-# Opção 2: Groq + Gemini (FREE com embeddings)
-GROQ_API_KEY=gsk_sua_chave_aqui
+# API Keys (ambas recomendadas)
+OPENAI_API_KEY=sk-proj-...
 GEMINI_API_KEY=AIzaSy_sua_chave_aqui
-
-# Opção 3: Todos os 4 provedores (máxima resiliência)
-GROQ_API_KEY=gsk_...
-GEMINI_API_KEY=AIzaSy_...
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-
-# Ordem de prioridade (opcional - padrão abaixo)
-ENABLED_PROVIDERS=groq,openai,gemini,anthropic
 
 # Database (padrão do docker-compose)
 DB_HOST=vortex-db
@@ -132,8 +108,8 @@ docker compose exec backend python scripts/seed_rss_feeds.py
 # Colete as primeiras notícias
 docker compose exec backend python main.py collect
 
-# Analise com IA (Phase 2)
-docker compose exec backend python main.py analyze --limit 100
+# Analise com IA (Phase 2 - todos os artigos)
+docker compose exec backend python main.py analyze
 
 # Indexe para busca semântica (Phase 3)
 docker compose exec backend python main.py index
@@ -197,7 +173,7 @@ O sistema busca notícias automaticamente em **6 fontes confiáveis** brasileira
 
 ### 2. 🤖 Análise com Inteligência Artificial (Phase 2)
 
-Cada artigo coletado é analisado por **um dos 4 provedores de IA** (com failover automático):
+Cada artigo coletado é analisado por **OpenAI ou Gemini** (com failover automático):
 
 **Marcadores detectados:**
 - ⚠️ **Linguagem sensacionalista** (títulos exagerados, alarmistas)
@@ -285,13 +261,12 @@ Interface web moderna construída com **React 18 + TypeScript**, tema escuro e r
 │                      │  └───────────┬───────────────────────────────────┘ │
 │                      │              │                                      │
 │                      │  ┌───────────▼──────────────────────────────────┐  │
-│                      │  │  🤖 Multi-Provider AI Engine (4 providers)   │  │
+│                      │  │  🤖 AI Engine (OpenAI + Gemini)              │  │
 │                      │  │                                              │  │
-│                      │  │  🟢 FREE: Groq (text), Gemini (embed backup) │  │
-│                      │  │  🟡 Paid: OpenAI (embed), Anthropic (text)   │  │
+│                      │  │  ⭐ OpenAI: text + embeddings 1536d (primary)│  │
+│                      │  │  🟢 Gemini: text + embeddings 768d (backup)  │  │
 │                      │  │                                              │  │
 │                      │  │  ✅ Automatic Failover                       │  │
-│                      │  │  ✅ Health Tracking                          │  │
 │                      │  │  ✅ Dimension Adapter (768→1536)             │  │
 │                      │  └──────────────────────────────────────────────┘  │
 │                      │              │                                      │
@@ -315,7 +290,7 @@ Interface web moderna construída com **React 18 + TypeScript**, tema escuro e r
 │                      │  │                                              │  │
 │                      │  │  Phase 4: Verifier (RAG with failover)      │  │
 │                      │  │  • Semantic search (cosine distance)        │  │
-│                      │  │  • LLM cross-referencing (4 providers)      │  │
+│                      │  │  • LLM cross-referencing (2 providers)      │  │
 │                      │  │  • Structured verdict                       │  │
 │                      │  └──────────────────────────────────────────────┘  │
 │                      │              │                                      │
@@ -355,10 +330,8 @@ Interface web moderna construída com **React 18 + TypeScript**, tema escuro e r
 | | Clerk | Autenticação (Google OAuth) |
 | **Database** | PostgreSQL 16 | Banco de dados relacional |
 | | pgvector | Busca vetorial (embeddings) |
-| **AI Providers** | Groq (FREE) | Llama 3.3 70B, Gemma 2 9B, Qwen 2.5 |
-| | Gemini (FREE) | Gemini 2.0 Flash + embeddings 768d |
-| | OpenAI (Paid) | GPT-4o + embeddings 1536d (~$0.50/mês) |
-| | Anthropic (Paid) | Claude 3.5 Sonnet/Haiku |
+| **AI Providers** | OpenAI (Paid) | GPT-4o + embeddings 1536d (~$0.50/mês) |
+| | Gemini (FREE) | Gemini 2.0 Flash + embeddings 768d (backup) |
 | **DevOps** | Docker + Docker Compose | Containerização |
 | | GitHub Actions | CI/CD (futuro) |
 
@@ -463,10 +436,18 @@ docker compose exec backend python main.py collect
 # Phase 1: Coletar apenas 50 artigos
 docker compose exec backend python main.py collect --limit 50
 
-# Phase 2: Analisar artigos não analisados (máx 100)
+# Phase 2: Analisar TODOS os artigos não analisados
+docker compose exec backend python main.py analyze
+
+# Phase 2: Analisar apenas 100 artigos
 docker compose exec backend python main.py analyze --limit 100
 
-# Phase 3: Indexar artigos analisados (gerar embeddings)
+# Phase 3: Indexar artigos (gerar embeddings com OpenAI)
+docker compose exec backend python main.py index
+
+# Pipeline completo (collect → analyze → index)
+docker compose exec backend python main.py collect && \
+docker compose exec backend python main.py analyze && \
 docker compose exec backend python main.py index
 
 # Phase 4: Verificar uma afirmação
@@ -521,24 +502,23 @@ asyncio.run(main())
 
 ## 🌐 Configuração Avançada
 
-### Selecionar Apenas Provedores FREE (100% Gratuito)
+### Usar Apenas Gemini (100% Gratuito)
 
 ```env
-ENABLED_PROVIDERS=groq,gemini
+ENABLED_PROVIDERS=gemini
 ```
 
-### Usar OpenAI como Primário para Embeddings (Recomendado)
+### Usar Apenas OpenAI (Maior Qualidade)
 
 ```env
-ENABLED_PROVIDERS=groq,openai,gemini,anthropic
-# OpenAI será usado primeiro para embeddings (1536d nativo)
-# Gemini como backup (768d adaptado para 1536d)
+ENABLED_PROVIDERS=openai
 ```
 
-### Usar Apenas Provedores Pagos de Alta Qualidade
+### Ambos com Failover (Recomendado)
 
 ```env
-ENABLED_PROVIDERS=openai,anthropic
+ENABLED_PROVIDERS=openai,gemini
+# OpenAI primeiro (1536d nativo), Gemini backup (768d→1536d)
 ```
 
 ### Ajustar Intervalo de Coleta
@@ -558,9 +538,9 @@ COLLECT_INTERVAL_HOURS=6  # Coletar a cada 6 horas
 - 💾 Tamanho do banco: ~35 MB
 
 **Análise:**
-- 🤖 100 artigos analisados em ~5 minutos (Groq)
+- 🤖 100 artigos analisados em ~5 minutos (OpenAI)
 - 📊 Velocidade: ~20 artigos/minuto
-- 💰 Custo: $0 (usando Groq FREE)
+- 💰 Custo: ~$0.05 (OpenAI GPT-4o-mini)
 
 **Verificação:**
 - 🔍 Tempo médio de resposta: 2-5 segundos
@@ -589,10 +569,8 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ## 🙏 Agradecimentos
 
-- **Groq** por fornecer acesso FREE ilimitado aos modelos Llama
-- **Google** pelo Gemini com tier FREE generoso
 - **OpenAI** pelos embeddings de alta qualidade e custo acessível
-- **Anthropic** pelo Claude 3.5 Sonnet/Haiku
+- **Google** pelo Gemini com tier FREE generoso
 - Comunidade Python e ecossistema FastAPI
 - Contribuidores do projeto pgvector
 

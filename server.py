@@ -56,7 +56,7 @@ class VerifyRequest(BaseModel):
     claim: str = Field(..., min_length=10, max_length=2000, description="The claim to verify")
 
 class AnalyzeRequest(BaseModel):
-    limit: int = Field(default=5, ge=1, le=50, description="Number of articles to analyze")
+    limit: Optional[int] = Field(default=None, ge=1, le=5000, description="Number of articles to analyze (default: all)")
 
 class VerifyResponse(BaseModel):
     veredito: str
