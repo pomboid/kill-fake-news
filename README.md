@@ -13,13 +13,13 @@
   <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" alt="React"/>
   <img src="https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi&logoColor=white" alt="FastAPI"/>
   <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL"/>
-  <img src="https://img.shields.io/badge/AI_Providers-8-FF6B6B?logo=openai&logoColor=white" alt="8 AI Providers"/>
+  <img src="https://img.shields.io/badge/AI_Providers-4-FF6B6B?logo=openai&logoColor=white" alt="4 AI Providers"/>
   <img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker"/>
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License"/>
 </p>
 
 <p align="center">
-  <em>Detecte, analise e verifique notícias falsas automaticamente usando 8 provedores de IA com failover automático</em>
+  <em>Detecte, analise e verifique notícias falsas automaticamente usando 4 provedores de IA com failover automático</em>
 </p>
 
 ---
@@ -29,7 +29,7 @@
 O **VORTEX** (Verification & Observation of Real-Time EXploits) é um sistema completo de defesa cognitiva contra desinformação baseado em **RAG (Retrieval-Augmented Generation)**. Em termos simples:
 
 1. 🤖 O sistema **coleta notícias** automaticamente de portais confiáveis via RSS/scraping
-2. 🧠 Usa **8 provedores de IA diferentes** (Groq, Gemini, OpenAI, Claude, etc.) com failover automático
+2. 🧠 Usa **4 provedores de IA diferentes** (Groq, Gemini, OpenAI, Anthropic) com failover automático
 3. 🔍 Permite que **você cole qualquer texto ou afirmação** e o sistema verifica se é verdadeiro, falso ou inconclusivo
 4. 📊 Mostra tudo em um **painel visual moderno** com estatísticas em tempo real
 
@@ -37,41 +37,31 @@ O **VORTEX** (Verification & Observation of Real-Time EXploits) é um sistema co
 
 ---
 
-## 🤖 8 Provedores de IA com Failover Automático
+## 🤖 4 Provedores de IA com Failover Automático
 
-O VORTEX suporta **8 provedores diferentes de IA**, proporcionando **máxima resiliência e flexibilidade**:
+O VORTEX suporta **4 provedores de IA**, proporcionando **resiliência e flexibilidade**:
 
-### 🟢 FREE
+### 🟢 FREE (Recomendado para começar)
 
 | # | Provider | Modelos | Embeddings | API Key |
 |---|----------|---------|------------|---------|
 | 1 | **Groq** ⭐ | Llama 3.3 70B, Gemma 2 9B, Mixtral 8x7B, Qwen 2.5 7B | ❌ | [Obter Key](https://console.groq.com/keys) |
 | 2 | **Gemini** | Gemini 2.0 Flash, Gemini 1.5 Pro, Gemini 1.5 Flash | ✅ 768d | [Obter Key](https://aistudio.google.com/apikey) |
 
-### 🟡 Freemium
+### 🟡 Paid (Opcional para maior qualidade)
 
 | # | Provider | Modelos | Embeddings | API Key |
 |---|----------|---------|------------|---------|
-| 3 | **OpenAI** | GPT-4o, GPT-4o-mini ($0.15/1M tokens) | ✅ 1536d | [Obter Key](https://platform.openai.com/api-keys) |
-| 4 | **Anthropic** | Claude 3.5 Sonnet, Claude 3.5 Haiku ($0.25/1M tokens) | ❌ | [Obter Key](https://console.anthropic.com/account/keys) |
-
-### 🔴 Paid
-
-| # | Provider | Modelos | Embeddings | API Key |
-|---|----------|---------|------------|---------|
-| 5 | **DeepSeek** | DeepSeek-V3, DeepSeek-R1 (~$0.14/1M tokens) | ❌ | [Obter Key](https://platform.deepseek.com/api_keys) |
-| 6 | **Mistral** | Mistral Large 2, Mistral Small, Mixtral 8x7B | ✅ 1024d | [Obter Key](https://console.mistral.ai/api-keys) |
-| 7 | **Together** | Llama 3.1 405B, Mixtral 8x22B, Qwen 2.5 | ✅ 1024d | [Obter Key](https://api.together.xyz/settings/api-keys) |
-| 8 | **Cohere** | Command R+, Command R | ✅ 1024d | [Obter Key](https://dashboard.cohere.com/api-keys) |
+| 3 | **OpenAI** ⭐ | GPT-4o, GPT-4o-mini, text-embedding-3-small | ✅ 1536d | [Obter Key](https://platform.openai.com/api-keys) |
+| 4 | **Anthropic** | Claude 3.5 Sonnet, Claude 3.5 Haiku | ❌ | [Obter Key](https://console.anthropic.com/account/keys) |
 
 ### ✨ Benefícios do Sistema Multi-Provider
 
 - ✅ **Failover Automático**: Se um provedor falhar, tenta automaticamente o próximo
 - ✅ **100% Gratuito**: Funciona completamente com Groq + Gemini (ambos FREE)
-- ✅ **Load Balancing**: Opcional para distribuir requisições (round-robin)
-- ✅ **Máxima Resiliência**: 8 opções de backup
-- ✅ **Flexibilidade Total**: Escolha por custo, qualidade, compliance regional
-- ✅ **5 Opções de Embeddings**: Gemini, OpenAI, Mistral, Together, Cohere
+- ✅ **Embeddings de Alta Qualidade**: OpenAI 1536d (pago, ~$0.50/mês) ou Gemini 768d (grátis)
+- ✅ **Máxima Resiliência**: 4 opções confiáveis de backup
+- ✅ **Custo Acessível**: $10 na OpenAI duram 20+ meses para embeddings
 
 ---
 
@@ -101,18 +91,14 @@ GROQ_API_KEY=gsk_sua_chave_aqui
 GROQ_API_KEY=gsk_sua_chave_aqui
 GEMINI_API_KEY=AIzaSy_sua_chave_aqui
 
-# Opção 3: Todos os 8 provedores (máxima resiliência)
+# Opção 3: Todos os 4 provedores (máxima resiliência)
 GROQ_API_KEY=gsk_...
 GEMINI_API_KEY=AIzaSy_...
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
-DEEPSEEK_API_KEY=sk-...
-MISTRAL_API_KEY=...
-TOGETHER_API_KEY=...
-COHERE_API_KEY=...
 
 # Ordem de prioridade (opcional - padrão abaixo)
-ENABLED_PROVIDERS=groq,gemini,openai,anthropic,deepseek,mistral,together,cohere
+ENABLED_PROVIDERS=groq,openai,gemini,anthropic
 
 # Database (padrão do docker-compose)
 DB_HOST=vortex-db
@@ -211,7 +197,7 @@ O sistema busca notícias automaticamente em **6 fontes confiáveis** brasileira
 
 ### 2. 🤖 Análise com Inteligência Artificial (Phase 2)
 
-Cada artigo coletado é analisado por **um dos 8 provedores de IA** (com failover automático):
+Cada artigo coletado é analisado por **um dos 4 provedores de IA** (com failover automático):
 
 **Marcadores detectados:**
 - ⚠️ **Linguagem sensacionalista** (títulos exagerados, alarmistas)
@@ -240,11 +226,11 @@ Cada artigo coletado é analisado por **um dos 8 provedores de IA** (com failove
 
 Usa **pgvector** (extensão do PostgreSQL) para busca por similaridade:
 
-- 📊 **Embeddings**: Vetores de 768 a 1536 dimensões (depende do provider)
+- 📊 **Embeddings**: Vetores de 1536 dimensões (OpenAI padrão, Gemini adaptado)
 - 🔎 **Busca semântica**: Cosine distance search no PostgreSQL
-- ⚡ **Performance**: Índice HNSW para buscas rápidas
+- ⚡ **Performance**: Índice IVFFlat para buscas rápidas
 - 🎯 **Precisão**: Encontra artigos relevantes mesmo sem palavras exatas
-- 🔄 **Failover**: Se um provider de embedding falhar, tenta o próximo
+- 🔄 **Failover**: OpenAI (primário) → Gemini (backup gratuito)
 
 ### 4. ✅ Verificação de Fatos (Phase 4 - RAG)
 
@@ -299,15 +285,14 @@ Interface web moderna construída com **React 18 + TypeScript**, tema escuro e r
 │                      │  └───────────┬───────────────────────────────────┘ │
 │                      │              │                                      │
 │                      │  ┌───────────▼──────────────────────────────────┐  │
-│                      │  │  🤖 Multi-Provider AI Engine                 │  │
+│                      │  │  🤖 Multi-Provider AI Engine (4 providers)   │  │
 │                      │  │                                              │  │
-│                      │  │  🟢 FREE: Groq, Gemini                       │  │
-│                      │  │  🟡 Freemium: OpenAI, Anthropic              │  │
-│                      │  │  🔴 Paid: DeepSeek, Mistral, Together, Cohere│  │
+│                      │  │  🟢 FREE: Groq (text), Gemini (embed backup) │  │
+│                      │  │  🟡 Paid: OpenAI (embed), Anthropic (text)   │  │
 │                      │  │                                              │  │
 │                      │  │  ✅ Automatic Failover                       │  │
-│                      │  │  ✅ Load Balancing (optional)                │  │
 │                      │  │  ✅ Health Tracking                          │  │
+│                      │  │  ✅ Dimension Adapter (768→1536)             │  │
 │                      │  └──────────────────────────────────────────────┘  │
 │                      │              │                                      │
 │                      │  ┌───────────▼──────────────────────────────────┐  │
@@ -324,20 +309,20 @@ Interface web moderna construída com **React 18 + TypeScript**, tema escuro e r
 │                      │  │  • Tries providers in priority order        │  │
 │                      │  │                                              │  │
 │                      │  │  Phase 3: Indexer (pgvector + embeddings)   │  │
-│                      │  │  • Generate embeddings (5 provider options) │  │
-│                      │  │  • Store in PostgreSQL                      │  │
-│                      │  │  • HNSW index for fast search               │  │
+│                      │  │  • Generate embeddings (OpenAI 1536d)       │  │
+│                      │  │  • Fallback to Gemini 768d (padded to 1536) │  │
+│                      │  │  • Store in PostgreSQL with IVFFlat index   │  │
 │                      │  │                                              │  │
 │                      │  │  Phase 4: Verifier (RAG with failover)      │  │
 │                      │  │  • Semantic search (cosine distance)        │  │
-│                      │  │  • LLM cross-referencing (8 providers)      │  │
+│                      │  │  • LLM cross-referencing (4 providers)      │  │
 │                      │  │  • Structured verdict                       │  │
 │                      │  └──────────────────────────────────────────────┘  │
 │                      │              │                                      │
 │                      │  ┌───────────▼──────────────────────────────────┐  │
 │                      │  │  📊 PostgreSQL 16 + pgvector                 │  │
 │                      │  │  • Articles (title, content, url)            │  │
-│                      │  │  • Embeddings (768-1536 dim vectors)         │  │
+│                      │  │  • Embeddings (1536 dim vectors)             │  │
 │                      │  │  • Analysis (AI verdicts)                    │  │
 │                      │  │  • Verifications (fact-checks)               │  │
 │                      │  │  • RSS Feeds (155 URLs)                      │  │
@@ -370,14 +355,10 @@ Interface web moderna construída com **React 18 + TypeScript**, tema escuro e r
 | | Clerk | Autenticação (Google OAuth) |
 | **Database** | PostgreSQL 16 | Banco de dados relacional |
 | | pgvector | Busca vetorial (embeddings) |
-| **AI Providers** | Groq (FREE) | Llama 3.3 70B, Gemma 2 9B |
-| | Gemini (FREE) | Gemini 2.0 Flash + embeddings |
-| | OpenAI | GPT-4o, embeddings |
-| | Anthropic | Claude 3.5 Sonnet/Haiku |
-| | DeepSeek | DeepSeek-V3 (custo-benefício) |
-| | Mistral | Mistral Large 2 (GDPR) |
-| | Together AI | Llama 3.1 405B |
-| | Cohere | Command R+ (RAG specialist) |
+| **AI Providers** | Groq (FREE) | Llama 3.3 70B, Gemma 2 9B, Qwen 2.5 |
+| | Gemini (FREE) | Gemini 2.0 Flash + embeddings 768d |
+| | OpenAI (Paid) | GPT-4o + embeddings 1536d (~$0.50/mês) |
+| | Anthropic (Paid) | Claude 3.5 Sonnet/Haiku |
 | **DevOps** | Docker + Docker Compose | Containerização |
 | | GitHub Actions | CI/CD (futuro) |
 
@@ -421,7 +402,7 @@ CREATE TABLE article (
     published_at TIMESTAMP,
     url VARCHAR UNIQUE,
     content TEXT,
-    embedding vector(768),  -- ou 1536 dependendo do provider
+    embedding vector(1536),  -- OpenAI padrão (Gemini adaptado via padding)
     created_at TIMESTAMP
 );
 
@@ -448,8 +429,8 @@ CREATE TABLE verification (
     created_at TIMESTAMP
 );
 
--- Índice HNSW para busca vetorial rápida
-CREATE INDEX ON article USING hnsw (embedding vector_cosine_ops);
+-- Índice IVFFlat para busca vetorial rápida (10K artigos)
+CREATE INDEX ON article USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
 ```
 
 ---
@@ -540,16 +521,18 @@ asyncio.run(main())
 
 ## 🌐 Configuração Avançada
 
-### Selecionar Apenas Provedores FREE
+### Selecionar Apenas Provedores FREE (100% Gratuito)
 
 ```env
 ENABLED_PROVIDERS=groq,gemini
 ```
 
-### Ativar Load Balancing (Round-Robin)
+### Usar OpenAI como Primário para Embeddings (Recomendado)
 
 ```env
-LOAD_BALANCE=true
+ENABLED_PROVIDERS=groq,openai,gemini,anthropic
+# OpenAI será usado primeiro para embeddings (1536d nativo)
+# Gemini como backup (768d adaptado para 1536d)
 ```
 
 ### Usar Apenas Provedores Pagos de Alta Qualidade
@@ -608,7 +591,8 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 - **Groq** por fornecer acesso FREE ilimitado aos modelos Llama
 - **Google** pelo Gemini com tier FREE generoso
-- **OpenAI, Anthropic, DeepSeek, Mistral, Together AI, Cohere** pelas APIs de qualidade
+- **OpenAI** pelos embeddings de alta qualidade e custo acessível
+- **Anthropic** pelo Claude 3.5 Sonnet/Haiku
 - Comunidade Python e ecossistema FastAPI
 - Contribuidores do projeto pgvector
 
