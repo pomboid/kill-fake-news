@@ -7,18 +7,14 @@ load_dotenv()
 class Config:
     # --- Multi-Provider AI Configuration ---
     # API Keys for different providers
-    GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-    DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
-    MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
-    TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
-    COHERE_API_KEY = os.getenv("COHERE_API_KEY")
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY")                                  # FREE text generation
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")  # FREE embeddings (768 dims)
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")                              # Paid embeddings (1536 dims)
+    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")                        # Paid text generation
 
-    # Enabled providers (in priority order: free first, then paid)
-    # Providers are tried in this order for failover
-    ENABLED_PROVIDERS = os.getenv("ENABLED_PROVIDERS", "groq,gemini,openai,anthropic,deepseek,mistral,together,cohere").split(",")
+    # Enabled providers (in priority order for failover)
+    # OpenAI first for embeddings (reliable), Gemini backup (free)
+    ENABLED_PROVIDERS = os.getenv("ENABLED_PROVIDERS", "groq,openai,gemini,anthropic").split(",")
 
     # Load balancing: if True, distributes requests round-robin; if False, always tries in priority order
     LOAD_BALANCE = os.getenv("LOAD_BALANCE", "false").lower() == "true"
@@ -27,14 +23,10 @@ class Config:
     def get_provider_api_keys(cls) -> dict:
         """Get all configured API keys"""
         return {
-            "groq": cls.GROQ_API_KEY,
-            "gemini": cls.GEMINI_API_KEY,
-            "openai": cls.OPENAI_API_KEY,
-            "anthropic": cls.ANTHROPIC_API_KEY,
-            "deepseek": cls.DEEPSEEK_API_KEY,
-            "mistral": cls.MISTRAL_API_KEY,
-            "together": cls.TOGETHER_API_KEY,
-            "cohere": cls.COHERE_API_KEY,
+            "groq": cls.GROQ_API_KEY,        # FREE text generation
+            "openai": cls.OPENAI_API_KEY,    # Paid embeddings (primary)
+            "gemini": cls.GEMINI_API_KEY,    # FREE embeddings (backup)
+            "anthropic": cls.ANTHROPIC_API_KEY,  # Paid text generation
         }
 
     @classmethod

@@ -11,10 +11,7 @@ from .providers.groq_provider import GroqProvider
 from .providers.gemini_provider import GeminiProvider
 from .providers.openai_provider import OpenAIProvider
 from .providers.anthropic_provider import AnthropicProvider
-from .providers.deepseek_provider import DeepSeekProvider
-from .providers.together_provider import TogetherProvider
-from .providers.cohere_provider import CohereProvider
-from .providers.mistral_provider import MistralProvider
+from .embedding_adapter import adapt_embedding
 
 logger = logging.getLogger("VORTEX.LLM.Manager")
 
@@ -53,19 +50,17 @@ class LLMManager:
         self.llm_providers: List[LLMProvider] = []
         self.embedding_providers: List[EmbeddingProvider] = []
 
-        # Initialize providers in priority order (free first, then paid)
+        # Initialize providers in priority order
+        # OpenAI first for embeddings (reliable, 1536 dims native)
+        # Gemini backup for embeddings (free, 768 dims adapted to 1536)
         provider_classes = [
-            # FREE providers (priority 1-2)
-            (GroqProvider, 'groq'),
-            (GeminiProvider, 'gemini'),
-            # Freemium providers (priority 3-4)
-            (OpenAIProvider, 'openai'),
-            (AnthropicProvider, 'anthropic'),
-            # Paid providers (priority 5-8)
-            (DeepSeekProvider, 'deepseek'),
-            (MistralProvider, 'mistral'),
-            (TogetherProvider, 'together'),
-            (CohereProvider, 'cohere'),
+            # Text generation (no embeddings)
+            (GroqProvider, 'groq'),           # Priority 1: FREE text, fast
+            # Embeddings + Text
+            (OpenAIProvider, 'openai'),       # Priority 2: Paid embeddings (1536), reliable
+            (GeminiProvider, 'gemini'),       # Priority 3: FREE embeddings (768→1536), backup
+            # Text generation only (backup)
+            (AnthropicProvider, 'anthropic'), # Priority 4: Paid text, high quality
         ]
 
         for provider_class, provider_name in provider_classes:
@@ -223,7 +218,15 @@ class LLMManager:
             try:
                 logger.info(f"Using {provider.display_name} for embedding")
                 result = await provider.get_embedding(text, model)
-                return result
+
+                # Adapt embedding to target dimensions (1536 for OpenAI standard)
+                adapted = adapt_embedding(
+                    result,
+                    target_dims=1536,
+                    source_provider=provider.display_name
+                )
+
+                return adapted
 
             except Exception as e:
                 last_error = e

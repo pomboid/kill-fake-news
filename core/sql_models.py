@@ -55,7 +55,9 @@ class Article(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
     # Text Analysis
-    embedding: Optional[List[float]] = Field(default=None, sa_column=Column(Vector(768)))
+    # Using 1536 dimensions (OpenAI text-embedding-3-small)
+    # Other providers (Gemini 768, Cohere 1024) are adapted via embedding_adapter
+    embedding: Optional[List[float]] = Field(default=None, sa_column=Column(Vector(1536)))
     
     source_id: Optional[int] = Field(default=None, foreign_key="source.id")
     source: Optional[Source] = Relationship(back_populates="articles")
