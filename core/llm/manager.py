@@ -11,6 +11,10 @@ from .providers.groq_provider import GroqProvider
 from .providers.gemini_provider import GeminiProvider
 from .providers.openai_provider import OpenAIProvider
 from .providers.anthropic_provider import AnthropicProvider
+from .providers.deepseek_provider import DeepSeekProvider
+from .providers.together_provider import TogetherProvider
+from .providers.cohere_provider import CohereProvider
+from .providers.mistral_provider import MistralProvider
 
 logger = logging.getLogger("VORTEX.LLM.Manager")
 
@@ -49,12 +53,19 @@ class LLMManager:
         self.llm_providers: List[LLMProvider] = []
         self.embedding_providers: List[EmbeddingProvider] = []
 
-        # Initialize providers in priority order (free first)
+        # Initialize providers in priority order (free first, then paid)
         provider_classes = [
+            # FREE providers (priority 1-2)
             (GroqProvider, 'groq'),
             (GeminiProvider, 'gemini'),
+            # Freemium providers (priority 3-4)
             (OpenAIProvider, 'openai'),
             (AnthropicProvider, 'anthropic'),
+            # Paid providers (priority 5-8)
+            (DeepSeekProvider, 'deepseek'),
+            (MistralProvider, 'mistral'),
+            (TogetherProvider, 'together'),
+            (CohereProvider, 'cohere'),
         ]
 
         for provider_class, provider_name in provider_classes:

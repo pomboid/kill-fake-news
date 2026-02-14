@@ -11,10 +11,14 @@ class Config:
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+    DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+    MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
+    TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
+    COHERE_API_KEY = os.getenv("COHERE_API_KEY")
 
     # Enabled providers (in priority order: free first, then paid)
     # Providers are tried in this order for failover
-    ENABLED_PROVIDERS = os.getenv("ENABLED_PROVIDERS", "groq,gemini,openai,anthropic").split(",")
+    ENABLED_PROVIDERS = os.getenv("ENABLED_PROVIDERS", "groq,gemini,openai,anthropic,deepseek,mistral,together,cohere").split(",")
 
     # Load balancing: if True, distributes requests round-robin; if False, always tries in priority order
     LOAD_BALANCE = os.getenv("LOAD_BALANCE", "false").lower() == "true"
@@ -27,6 +31,10 @@ class Config:
             "gemini": cls.GEMINI_API_KEY,
             "openai": cls.OPENAI_API_KEY,
             "anthropic": cls.ANTHROPIC_API_KEY,
+            "deepseek": cls.DEEPSEEK_API_KEY,
+            "mistral": cls.MISTRAL_API_KEY,
+            "together": cls.TOGETHER_API_KEY,
+            "cohere": cls.COHERE_API_KEY,
         }
 
     @classmethod
