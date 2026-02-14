@@ -41,21 +41,21 @@ O **VORTEX** (Verification & Observation of Real-Time EXploits) é um sistema co
 
 O VORTEX suporta **8 provedores diferentes de IA**, proporcionando **máxima resiliência e flexibilidade**:
 
-### 🟢 FREE (Prioridade Máxima)
+### 🟢 FREE
 
 | # | Provider | Modelos | Embeddings | API Key |
 |---|----------|---------|------------|---------|
 | 1 | **Groq** ⭐ | Llama 3.3 70B, Gemma 2 9B, Mixtral 8x7B, Qwen 2.5 7B | ❌ | [Obter Key](https://console.groq.com/keys) |
 | 2 | **Gemini** | Gemini 2.0 Flash, Gemini 1.5 Pro, Gemini 1.5 Flash | ✅ 768d | [Obter Key](https://aistudio.google.com/apikey) |
 
-### 🟡 Freemium (Tier Gratuito Limitado)
+### 🟡 Freemium
 
 | # | Provider | Modelos | Embeddings | API Key |
 |---|----------|---------|------------|---------|
 | 3 | **OpenAI** | GPT-4o, GPT-4o-mini ($0.15/1M tokens) | ✅ 1536d | [Obter Key](https://platform.openai.com/api-keys) |
 | 4 | **Anthropic** | Claude 3.5 Sonnet, Claude 3.5 Haiku ($0.25/1M tokens) | ❌ | [Obter Key](https://console.anthropic.com/account/keys) |
 
-### 🔴 Paid (Custo-Benefício)
+### 🔴 Paid
 
 | # | Provider | Modelos | Embeddings | API Key |
 |---|----------|---------|------------|---------|
