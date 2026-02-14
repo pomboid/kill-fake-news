@@ -5,7 +5,7 @@
 <h1 align="center">🌀 VORTEX</h1>
 
 <p align="center">
-  <strong>Sistema Inteligente de Combate a Fake News com Inteligência Artificial</strong>
+  <strong>Sistema Inteligente de Combate a Fake News com Múltiplos Provedores de IA</strong>
 </p>
 
 <p align="center">
@@ -13,13 +13,13 @@
   <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" alt="React"/>
   <img src="https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi&logoColor=white" alt="FastAPI"/>
   <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL"/>
-  <img src="https://img.shields.io/badge/Gemini_AI-2.0_Flash-4285F4?logo=google&logoColor=white" alt="Gemini"/>
+  <img src="https://img.shields.io/badge/AI_Providers-8-FF6B6B?logo=openai&logoColor=white" alt="8 AI Providers"/>
   <img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker"/>
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License"/>
 </p>
 
 <p align="center">
-  <em>Detecte, analise e verifique notícias falsas automaticamente usando Inteligência Artificial</em>
+  <em>Detecte, analise e verifique notícias falsas automaticamente usando 8 provedores de IA com failover automático</em>
 </p>
 
 ---
@@ -29,11 +29,153 @@
 O **VORTEX** (Verification & Observation of Real-Time EXploits) é um sistema completo de defesa cognitiva contra desinformação baseado em **RAG (Retrieval-Augmented Generation)**. Em termos simples:
 
 1. 🤖 O sistema **coleta notícias** automaticamente de portais confiáveis via RSS/scraping
-2. 🧠 Usa **Inteligência Artificial (Google Gemini 2.0 Flash)** para analisar cada notícia e identificar padrões de fake news
+2. 🧠 Usa **8 provedores de IA diferentes** (Groq, Gemini, OpenAI, Claude, etc.) com failover automático
 3. 🔍 Permite que **você cole qualquer texto ou afirmação** e o sistema verifica se é verdadeiro, falso ou inconclusivo
 4. 📊 Mostra tudo em um **painel visual moderno** com estatísticas em tempo real
 
 > **Pense no VORTEX como um "detector de mentiras digital"** — ele cruza informações de fontes confiáveis para te dizer se aquela notícia do WhatsApp é verdadeira ou não.
+
+---
+
+## 🤖 8 Provedores de IA com Failover Automático
+
+O VORTEX suporta **8 provedores diferentes de IA**, proporcionando **máxima resiliência e flexibilidade**:
+
+### 🟢 FREE (Prioridade Máxima)
+
+| # | Provider | Modelos | Embeddings | API Key |
+|---|----------|---------|------------|---------|
+| 1 | **Groq** ⭐ | Llama 3.3 70B, Gemma 2 9B, Mixtral 8x7B, Qwen 2.5 7B | ❌ | [Obter Key](https://console.groq.com/keys) |
+| 2 | **Gemini** | Gemini 2.0 Flash, Gemini 1.5 Pro, Gemini 1.5 Flash | ✅ 768d | [Obter Key](https://aistudio.google.com/apikey) |
+
+### 🟡 Freemium (Tier Gratuito Limitado)
+
+| # | Provider | Modelos | Embeddings | API Key |
+|---|----------|---------|------------|---------|
+| 3 | **OpenAI** | GPT-4o, GPT-4o-mini ($0.15/1M tokens) | ✅ 1536d | [Obter Key](https://platform.openai.com/api-keys) |
+| 4 | **Anthropic** | Claude 3.5 Sonnet, Claude 3.5 Haiku ($0.25/1M tokens) | ❌ | [Obter Key](https://console.anthropic.com/account/keys) |
+
+### 🔴 Paid (Custo-Benefício)
+
+| # | Provider | Modelos | Embeddings | API Key |
+|---|----------|---------|------------|---------|
+| 5 | **DeepSeek** | DeepSeek-V3, DeepSeek-R1 (~$0.14/1M tokens) | ❌ | [Obter Key](https://platform.deepseek.com/api_keys) |
+| 6 | **Mistral** | Mistral Large 2, Mistral Small, Mixtral 8x7B | ✅ 1024d | [Obter Key](https://console.mistral.ai/api-keys) |
+| 7 | **Together** | Llama 3.1 405B, Mixtral 8x22B, Qwen 2.5 | ✅ 1024d | [Obter Key](https://api.together.xyz/settings/api-keys) |
+| 8 | **Cohere** | Command R+, Command R | ✅ 1024d | [Obter Key](https://dashboard.cohere.com/api-keys) |
+
+### ✨ Benefícios do Sistema Multi-Provider
+
+- ✅ **Failover Automático**: Se um provedor falhar, tenta automaticamente o próximo
+- ✅ **100% Gratuito**: Funciona completamente com Groq + Gemini (ambos FREE)
+- ✅ **Load Balancing**: Opcional para distribuir requisições (round-robin)
+- ✅ **Máxima Resiliência**: 8 opções de backup
+- ✅ **Flexibilidade Total**: Escolha por custo, qualidade, compliance regional
+- ✅ **5 Opções de Embeddings**: Gemini, OpenAI, Mistral, Together, Cohere
+
+---
+
+## 🚀 Começando em 5 Minutos
+
+### 1️⃣ Obter API Keys (Escolha pelo menos 1)
+
+**Recomendado para começar (100% GRÁTIS):**
+
+1. **Groq** (FREE, ilimitado): https://console.groq.com/keys
+   - Cadastro instantâneo com email
+   - Modelos ultra-rápidos (Llama 3.3 70B)
+
+2. **Gemini** (FREE, 1M tokens/min): https://aistudio.google.com/apikey
+   - Login com conta Google
+   - Inclui embeddings (768 dimensões)
+
+### 2️⃣ Configurar o .env
+
+Crie um arquivo `.env` na raiz do projeto:
+
+```bash
+# Opção 1: APENAS Groq (mais simples, FREE)
+GROQ_API_KEY=gsk_sua_chave_aqui
+
+# Opção 2: Groq + Gemini (FREE com embeddings)
+GROQ_API_KEY=gsk_sua_chave_aqui
+GEMINI_API_KEY=AIzaSy_sua_chave_aqui
+
+# Opção 3: Todos os 8 provedores (máxima resiliência)
+GROQ_API_KEY=gsk_...
+GEMINI_API_KEY=AIzaSy_...
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+DEEPSEEK_API_KEY=sk-...
+MISTRAL_API_KEY=...
+TOGETHER_API_KEY=...
+COHERE_API_KEY=...
+
+# Ordem de prioridade (opcional - padrão abaixo)
+ENABLED_PROVIDERS=groq,gemini,openai,anthropic,deepseek,mistral,together,cohere
+
+# Database (padrão do docker-compose)
+DB_HOST=vortex-db
+DB_PORT=5432
+DB_USER=vortex
+DB_PASSWORD=vortex_password
+DB_NAME=vortex_db
+
+# Coleta automática (em horas)
+COLLECT_INTERVAL_HOURS=1
+```
+
+### 3️⃣ Rodar com Docker
+
+```bash
+# Clone o repositório
+git clone https://github.com/pomboid/kill-fake-news.git
+cd kill-fake-news
+
+# Configure o .env (veja passo anterior)
+nano .env
+
+# Suba os containers
+docker compose up -d
+
+# Aguarde ~30s para o PostgreSQL inicializar
+
+# Popule os feeds RSS (155 feeds de 6 fontes)
+docker compose exec backend python scripts/seed_rss_feeds.py
+
+# Colete as primeiras notícias
+docker compose exec backend python main.py collect
+
+# Analise com IA (Phase 2)
+docker compose exec backend python main.py analyze --limit 100
+
+# Indexe para busca semântica (Phase 3)
+docker compose exec backend python main.py index
+```
+
+### 4️⃣ Verificar uma Afirmação
+
+```bash
+docker compose exec backend python main.py verify "O governo vai taxar o PIX"
+```
+
+**Resultado:**
+```
+🔍 AFIRMAÇÃO ANALISADA: O governo vai taxar o PIX
+
+🟢 [FALSO]
+Confiança: 85%
+
+Análise:
+A afirmação é falsa. O governo federal esclareceu publicamente que não há
+proposta de taxação do PIX. A confusão surgiu de medidas de fiscalização
+da Receita Federal sobre movimentações financeiras acima de R$ 5.000/mês,
+que já existiam antes e não afetam transações PIX normais.
+
+Evidências:
+- "Governo nega taxação do PIX e esclarece fiscalização"
+- "Receita Federal: monitoramento não significa imposto"
+```
 
 ---
 
@@ -69,8 +211,9 @@ O sistema busca notícias automaticamente em **6 fontes confiáveis** brasileira
 
 ### 2. 🤖 Análise com Inteligência Artificial (Phase 2)
 
-Cada artigo coletado é analisado pelo **Google Gemini 2.0 Flash**, que identifica:
+Cada artigo coletado é analisado por **um dos 8 provedores de IA** (com failover automático):
 
+**Marcadores detectados:**
 - ⚠️ **Linguagem sensacionalista** (títulos exagerados, alarmistas)
 - 🎣 **Clickbait** (títulos enganosos para gerar cliques)
 - 😡 **Manipulação emocional** (apelar para medo, raiva, indignação)
@@ -97,10 +240,11 @@ Cada artigo coletado é analisado pelo **Google Gemini 2.0 Flash**, que identifi
 
 Usa **pgvector** (extensão do PostgreSQL) para busca por similaridade:
 
-- 📊 **Embeddings**: Vetores de 768 dimensões via `text-embedding-004`
+- 📊 **Embeddings**: Vetores de 768 a 1536 dimensões (depende do provider)
 - 🔎 **Busca semântica**: Cosine distance search no PostgreSQL
 - ⚡ **Performance**: Índice HNSW para buscas rápidas
 - 🎯 **Precisão**: Encontra artigos relevantes mesmo sem palavras exatas
+- 🔄 **Failover**: Se um provider de embedding falhar, tenta o próximo
 
 ### 4. ✅ Verificação de Fatos (Phase 4 - RAG)
 
@@ -108,16 +252,16 @@ Você pode verificar **qualquer afirmação** ou **artigo completo**:
 
 **Fluxo de verificação:**
 1. Usuário submete afirmação: *"O governo vai taxar o PIX"*
-2. Sistema gera embedding da afirmação (768-dim vector)
+2. Sistema gera embedding da afirmação (usa provider disponível)
 3. Busca semântica retorna top 5 artigos mais similares (pgvector)
-4. Gemini 2.0 Flash compara afirmação com evidências
+4. IA compara afirmação com evidências (usa provider disponível)
 5. Retorna veredicto estruturado:
 
 ```
-🟢 [VERDADEIRO]           - Confirmado por evidências
-🔴 [FALSO]                - Contradiz evidências
-🟡 [PARCIALMENTE VERDADEIRO] - Parcialmente correto
-⚪ [INCONCLUSIVO]         - Sem evidências suficientes
+🟢 [VERDADEIRO]               - Confirmado por evidências
+🔴 [FALSO]                    - Contradiz evidências
+🟡 [PARCIALMENTE VERDADEIRO]  - Parcialmente correto
+⚪ [INCONCLUSIVO]              - Sem evidências suficientes
 ```
 
 ### 5. 🖥️ Dashboard Interativo
@@ -127,6 +271,7 @@ Interface web moderna construída com **React 18 + TypeScript**, tema escuro e r
 - 📊 **Estatísticas em tempo real** — Artigos coletados, analisados, verificações
 - 📜 **Histórico de verificações** — Todas as verificações anteriores
 - 🟢 **Status das fontes** — Monitoramento de saúde (HTTP 200)
+- 🤖 **Status dos Provedores de IA** — Qual está ativo, taxa de sucesso
 - ⏰ **Automação** — Próxima execução do scheduler
 - 🔐 **Login seguro** — Autenticação via Google (Clerk)
 
@@ -135,626 +280,352 @@ Interface web moderna construída com **React 18 + TypeScript**, tema escuro e r
 ## 🏗️ Arquitetura do Sistema
 
 ```
-┌───────────────────────────────────────────────────────────────────┐
-│                         VORTEX SYSTEM                             │
-├──────────────────────┬────────────────────────────────────────────┤
-│                      │                                            │
-│  🌐 FRONTEND         │  ⚙️ BACKEND                               │
-│  React + TypeScript  │  Python 3.11 + FastAPI                     │
-│  Porta 80 (nginx)    │  Porta 8420                                │
-│                      │                                            │
-│  ┌────────────────┐  │  ┌──────────────────────────────────────┐ │
-│  │  Dashboard     │─────▶│  API REST                            │ │
-│  │  Login/Auth    │  │  │  /api/verify  (fact-check)           │ │
-│  │  Estatísticas  │  │  │  /api/analyze (run phase 2)          │ │
-│  │  Histórico     │  │  │  /api/status  (system stats)         │ │
-│  └────────────────┘  │  │  /api/history (past verifications)   │ │
-│                      │  │  /api/sources (source health)        │ │
-│                      │  │  /api/quality (data quality)         │ │
-│                      │  └──────────┬───────────────────────────┘ │
-│                      │             │                              │
-│                      │  ┌──────────▼───────────────────────────┐ │
-│                      │  │  🤖 Motor de IA (4 Phases)          │ │
-│                      │  │                                      │ │
-│                      │  │  Phase 1: Collector (RSS/Scraping)  │ │
-│                      │  │  • 155 RSS feeds from PostgreSQL    │ │
-│                      │  │  • Parallel scraping (5 async)      │ │
-│                      │  │  • Batch commits                    │ │
-│                      │  │                                      │ │
-│                      │  │  Phase 2: Analyzer (Gemini AI)      │ │
-│                      │  │  • Fake news markers detection      │ │
-│                      │  │  • Quality scores (0-10)            │ │
-│                      │  │                                      │ │
-│                      │  │  Phase 3: Indexer (pgvector)        │ │
-│                      │  │  • Generate 768-dim embeddings      │ │
-│                      │  │  • Store in PostgreSQL              │ │
-│                      │  │                                      │ │
-│                      │  │  Phase 4: Verifier (RAG)            │ │
-│                      │  │  • Semantic search (cosine dist.)   │ │
-│                      │  │  • LLM cross-referencing            │ │
-│                      │  └──────────────────────────────────────┘ │
-│                      │                                            │
-│                      │  ┌──────────────────────────────────────┐ │
-│                      │  │  📊 PostgreSQL 16 + pgvector         │ │
-│                      │  │  • Articles (title, content, url)    │ │
-│                      │  │  • Embeddings (768-dim vectors)      │ │
-│                      │  │  • Analysis (AI verdicts)            │ │
-│                      │  │  • Verifications (fact-checks)       │ │
-│                      │  │  • RSS Feeds (155 URLs)              │ │
-│                      │  │  • Sources (6 news outlets)          │ │
-│                      │  └──────────────────────────────────────┘ │
-│                      │                                            │
-│                      │  ⏰ APScheduler (Background Jobs)          │
-│                      │  • Collect every 1h (configurable)        │
-│                      │  • Source monitoring every 1h             │
-│                      │                                            │
-├──────────────────────┴────────────────────────────────────────────┤
-│  🐳 Docker Compose (3 containers: backend, frontend, vortex-db)  │
-└───────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────┐
+│                           VORTEX SYSTEM                                    │
+├──────────────────────┬─────────────────────────────────────────────────────┤
+│                      │                                                     │
+│  🌐 FRONTEND         │  ⚙️ BACKEND                                         │
+│  React + TypeScript  │  Python 3.11 + FastAPI                              │
+│  Porta 80 (nginx)    │  Porta 8420                                         │
+│                      │                                                     │
+│  ┌────────────────┐  │  ┌───────────────────────────────────────────────┐ │
+│  │  Dashboard     │─────▶│  API REST                                     │ │
+│  │  Login/Auth    │  │  │  /api/verify  (fact-check with failover)      │ │
+│  │  Estatísticas  │  │  │  /api/analyze (run phase 2)                   │ │
+│  │  Histórico     │  │  │  /api/status  (system + AI providers)         │ │
+│  │  AI Status     │  │  │  /api/history (past verifications)            │ │
+│  └────────────────┘  │  │  /api/sources (source health)                 │ │
+│                      │  │  /api/quality (data quality)                  │ │
+│                      │  └───────────┬───────────────────────────────────┘ │
+│                      │              │                                      │
+│                      │  ┌───────────▼──────────────────────────────────┐  │
+│                      │  │  🤖 Multi-Provider AI Engine                 │  │
+│                      │  │                                              │  │
+│                      │  │  🟢 FREE: Groq, Gemini                       │  │
+│                      │  │  🟡 Freemium: OpenAI, Anthropic              │  │
+│                      │  │  🔴 Paid: DeepSeek, Mistral, Together, Cohere│  │
+│                      │  │                                              │  │
+│                      │  │  ✅ Automatic Failover                       │  │
+│                      │  │  ✅ Load Balancing (optional)                │  │
+│                      │  │  ✅ Health Tracking                          │  │
+│                      │  └──────────────────────────────────────────────┘  │
+│                      │              │                                      │
+│                      │  ┌───────────▼──────────────────────────────────┐  │
+│                      │  │  📋 4-Phase Pipeline                         │  │
+│                      │  │                                              │  │
+│                      │  │  Phase 1: Collector (RSS/Scraping)          │  │
+│                      │  │  • 155 RSS feeds from PostgreSQL            │  │
+│                      │  │  • Parallel scraping (5 async)              │  │
+│                      │  │  • Batch commits                            │  │
+│                      │  │                                              │  │
+│                      │  │  Phase 2: Analyzer (AI with failover)       │  │
+│                      │  │  • Fake news markers detection              │  │
+│                      │  │  • Quality scores (0-10)                    │  │
+│                      │  │  • Tries providers in priority order        │  │
+│                      │  │                                              │  │
+│                      │  │  Phase 3: Indexer (pgvector + embeddings)   │  │
+│                      │  │  • Generate embeddings (5 provider options) │  │
+│                      │  │  • Store in PostgreSQL                      │  │
+│                      │  │  • HNSW index for fast search               │  │
+│                      │  │                                              │  │
+│                      │  │  Phase 4: Verifier (RAG with failover)      │  │
+│                      │  │  • Semantic search (cosine distance)        │  │
+│                      │  │  • LLM cross-referencing (8 providers)      │  │
+│                      │  │  • Structured verdict                       │  │
+│                      │  └──────────────────────────────────────────────┘  │
+│                      │              │                                      │
+│                      │  ┌───────────▼──────────────────────────────────┐  │
+│                      │  │  📊 PostgreSQL 16 + pgvector                 │  │
+│                      │  │  • Articles (title, content, url)            │  │
+│                      │  │  • Embeddings (768-1536 dim vectors)         │  │
+│                      │  │  • Analysis (AI verdicts)                    │  │
+│                      │  │  • Verifications (fact-checks)               │  │
+│                      │  │  • RSS Feeds (155 URLs)                      │  │
+│                      │  │  • Sources (6 news outlets)                  │  │
+│                      │  └──────────────────────────────────────────────┘  │
+│                      │                                                     │
+│                      │  ⏰ APScheduler (Background Jobs)                   │
+│                      │  • Collect every 1h (configurable)                 │
+│                      │  • Source monitoring every 1h                      │
+│                      │                                                     │
+├──────────────────────┴─────────────────────────────────────────────────────┤
+│  🐳 Docker Compose (3 containers: backend, frontend, vortex-db)           │
+└────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 🛠️ Stack Tecnológica
+---
+
+## 🛠️ Stack Tecnológica
 
 | Camada | Tecnologia | Para Quê? |
 |--------|-----------|-----------|
-| **Frontend** | React 18 + TypeScript + Vite | Interface do usuário |
-| **Estilo** | CSS moderno (tema escuro) | Visual premium |
-| **Autenticação** | Clerk (Google OAuth) | Login seguro |
-| **Backend** | Python 3.11 + FastAPI | API e lógica do servidor |
-| **IA Generativa** | Google Gemini 2.0 Flash | Análise de fake news + RAG |
-| **Embeddings** | text-embedding-004 (Gemini) | Transformar texto em vetores (768-dim) |
-| **Banco de Dados** | PostgreSQL 16 + pgvector | Armazenamento + busca semântica |
-| **Banco Vetorial** | pgvector extension | Cosine distance search (HNSW index) |
-| **ORM** | SQLModel + AsyncSession | Queries assíncronas |
-| **Scraping** | BeautifulSoup4 + httpx | Coleta de notícias |
-| **Agendamento** | APScheduler | Automação de tarefas |
-| **Containerização** | Docker + Docker Compose | Deploy simplificado |
-| **Servidor Web** | Nginx (Alpine) | Servir frontend em produção |
-| **Rate Limiting** | SlowAPI | Proteção contra abuso |
+| **Backend** | Python 3.11 | Linguagem principal |
+| | FastAPI | API REST moderna e assíncrona |
+| | SQLModel | ORM (Object-Relational Mapping) |
+| | AsyncPG | Driver PostgreSQL assíncrono |
+| | APScheduler | Jobs agendados (coleta automática) |
+| **Frontend** | React 18 + TypeScript | Interface web moderna |
+| | Vite | Build tool ultra-rápido |
+| | TailwindCSS | Estilização responsiva |
+| | Clerk | Autenticação (Google OAuth) |
+| **Database** | PostgreSQL 16 | Banco de dados relacional |
+| | pgvector | Busca vetorial (embeddings) |
+| **AI Providers** | Groq (FREE) | Llama 3.3 70B, Gemma 2 9B |
+| | Gemini (FREE) | Gemini 2.0 Flash + embeddings |
+| | OpenAI | GPT-4o, embeddings |
+| | Anthropic | Claude 3.5 Sonnet/Haiku |
+| | DeepSeek | DeepSeek-V3 (custo-benefício) |
+| | Mistral | Mistral Large 2 (GDPR) |
+| | Together AI | Llama 3.1 405B |
+| | Cohere | Command R+ (RAG specialist) |
+| **DevOps** | Docker + Docker Compose | Containerização |
+| | GitHub Actions | CI/CD (futuro) |
 
 ---
 
-## 🚀 Como Instalar
+## 📊 Schema do Banco de Dados
 
-### **Pré-requisitos**
+```sql
+-- Fontes de notícias
+CREATE TABLE source (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR UNIQUE,
+    display_name VARCHAR,
+    website_url VARCHAR,
+    status VARCHAR DEFAULT 'online',
+    last_checked TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE
+);
 
-Antes de começar, você vai precisar ter instalado:
+-- Feeds RSS por fonte
+CREATE TABLE rss_feed (
+    id SERIAL PRIMARY KEY,
+    source_id INTEGER REFERENCES source(id),
+    feed_url VARCHAR UNIQUE,
+    feed_type VARCHAR DEFAULT 'rss2',  -- rss2, atom, sitemap
+    category VARCHAR,
+    is_active BOOLEAN DEFAULT TRUE,
+    last_fetched TIMESTAMP,
+    fetch_count INTEGER DEFAULT 0,
+    error_count INTEGER DEFAULT 0,
+    last_error VARCHAR
+);
 
-- [Docker](https://docs.docker.com/get-docker/) e [Docker Compose](https://docs.docker.com/compose/install/)
-- [Git](https://git-scm.com/downloads)
-- Uma chave de API do **Google Gemini** (grátis): [Obtenha aqui](https://aistudio.google.com/app/apikey)
-- Uma conta no **Clerk** para autenticação: [Crie aqui](https://dashboard.clerk.com)
+-- Artigos coletados
+CREATE TABLE article (
+    id SERIAL PRIMARY KEY,
+    source_id INTEGER REFERENCES source(id),
+    title VARCHAR,
+    subtitle VARCHAR,
+    author VARCHAR,
+    published_at TIMESTAMP,
+    url VARCHAR UNIQUE,
+    content TEXT,
+    embedding vector(768),  -- ou 1536 dependendo do provider
+    created_at TIMESTAMP
+);
+
+-- Análises de IA
+CREATE TABLE analysis (
+    id SERIAL PRIMARY KEY,
+    article_id INTEGER REFERENCES article(id) UNIQUE,
+    is_fake BOOLEAN,
+    confidence_score FLOAT,
+    reasoning TEXT,
+    detected_markers JSON,
+    scores JSON,  -- {factual_consistency, linguistic_bias, sensationalism, source_credibility}
+    analyzed_at TIMESTAMP
+);
+
+-- Verificações de fatos
+CREATE TABLE verification (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR,
+    claim TEXT,
+    verdict VARCHAR,
+    confidence FLOAT,
+    evidence JSON,  -- Array de IDs de artigos usados como evidência
+    created_at TIMESTAMP
+);
+
+-- Índice HNSW para busca vetorial rápida
+CREATE INDEX ON article USING hnsw (embedding vector_cosine_ops);
+```
 
 ---
 
-### **Deploy com Docker (Recomendado)** 🐳
+## 🔧 Comandos Úteis
 
-#### Passo 1: Clone o Repositório
-
-```bash
-git clone https://github.com/pomboid/kill-fake-news.git
-cd kill-fake-news
-```
-
-#### Passo 2: Configure as Variáveis de Ambiente
-
-**Backend** (`.env` na raiz):
-```bash
-cp .env.production.example .env
-nano .env
-```
-
-Preencha:
-```env
-# Obrigatório — Chave da API Gemini
-GEMINI_API_KEY=sua_chave_gemini_aqui
-
-# API Key interna (para proteger endpoints)
-VORTEX_API_KEY=sua_chave_secreta_aqui
-
-# Configurações do scheduler
-COLLECT_INTERVAL_HOURS=1        # Coleta automática a cada 1 hora
-SOURCE_CHECK_INTERVAL_HOURS=1   # Monitoramento de fontes a cada 1 hora
-LOG_LEVEL=INFO
-
-# PostgreSQL (já configurado no docker-compose.yml)
-DATABASE_URL=postgresql+asyncpg://vortex:vortex_password@vortex-db:5432/vortex_db
-
-# CORS
-ALLOWED_ORIGINS=http://localhost,http://127.0.0.1,http://SEU_IP
-
-# Chave do Clerk (para Docker Compose build args)
-VITE_CLERK_PUBLISHABLE_KEY=pk_test_sua_chave_clerk_aqui
-VITE_API_URL=http://SEU_IP:8420
-```
-
-**Frontend** (`frontend/.env`):
-```bash
-nano frontend/.env
-```
-
-Preencha:
-```env
-VITE_CLERK_PUBLISHABLE_KEY=pk_test_sua_chave_clerk_aqui
-VITE_API_URL=http://SEU_IP:8420
-```
-
-> ⚠️ **IMPORTANTE:** Substitua `SEU_IP` pelo IP do seu servidor (ex: `192.168.1.100` ou `localhost`).
-
-#### Passo 3: Suba os Containers
+### Gerenciamento de Containers
 
 ```bash
+# Ver logs em tempo real
+docker compose logs -f backend
+
+# Reiniciar backend
+docker compose restart backend
+
+# Rebuild completo
+docker compose down
 docker compose up -d --build
+
+# Ver uso de recursos
+docker stats
 ```
 
-Aguarde ~60 segundos para o build completar.
-
-#### Passo 4: Popular o Banco com RSS Feeds
+### Pipeline de Dados
 
 ```bash
-# Criar tabelas e popular feeds
-docker compose exec backend python scripts/seed_rss_feeds.py
-```
-
-Isso vai criar 6 fontes e 155 feeds RSS no PostgreSQL.
-
-#### Passo 5: Coletar Primeiros Artigos
-
-```bash
-# Coletar artigos de todas as fontes (pode demorar ~30min-1h)
+# Phase 1: Coletar notícias (todas disponíveis)
 docker compose exec backend python main.py collect
 
-# OU com limite para teste rápido:
+# Phase 1: Coletar apenas 50 artigos
 docker compose exec backend python main.py collect --limit 50
-```
 
-#### Passo 6: Verifique
+# Phase 2: Analisar artigos não analisados (máx 100)
+docker compose exec backend python main.py analyze --limit 100
 
-```bash
-# Ver se os 3 containers estão rodando
-docker ps
+# Phase 3: Indexar artigos analisados (gerar embeddings)
+docker compose exec backend python main.py index
 
-# Deve mostrar:
-# vortex-backend   (porta 8420)
-# vortex-frontend  (porta 80)
-# vortex-db        (porta 5432, interna)
+# Phase 4: Verificar uma afirmação
+docker compose exec backend python main.py verify "texto da afirmação"
 
-# Ver status do sistema
+# Ver estatísticas do sistema
 docker compose exec backend python main.py status
 ```
 
-#### Passo 7: Acesse
-
-```
-Frontend (Interface): http://SEU_IP
-Backend (API):        http://SEU_IP:8420
-API Docs:             http://SEU_IP:8420/docs
-```
-
----
-
-### **Instalação Local (Desenvolvimento)** 💻
-
-Para quem quer desenvolver e modificar o código:
-
-#### Backend
+### Database
 
 ```bash
-# Clone o projeto
-git clone https://github.com/pomboid/kill-fake-news.git
-cd kill-fake-news
-
-# Crie e ative um ambiente virtual
-python -m venv venv
-source venv/bin/activate     # Linux/Mac
-# ou
-venv\Scripts\activate        # Windows
-
-# Instale as dependências
-pip install -r requirements.txt
-
-# Configure PostgreSQL local
-# Instale PostgreSQL 16+ com extensão pgvector
-createdb vortex_db
-psql vortex_db -c "CREATE EXTENSION vector;"
-
-# Configure variáveis de ambiente
-cp .env.production.example .env
-nano .env  # Adicione GEMINI_API_KEY e DATABASE_URL
-
-# Popular feeds
-python scripts/seed_rss_feeds.py
-
-# Rode o servidor
-uvicorn server:app --host 0.0.0.0 --port 8420 --reload
-```
-
-#### Frontend
-
-```bash
-cd frontend
-
-# Instale as dependências
-npm install
-
-# Configure variáveis de ambiente
-nano .env
-# Adicione:
-# VITE_CLERK_PUBLISHABLE_KEY=pk_test_sua_chave
-# VITE_API_URL=http://localhost:8420
-
-# Rode o frontend (desenvolvimento)
-npm run dev
-# Acesse: http://localhost:5173
-```
-
----
-
-## 📖 Como Usar
-
-### Via Dashboard Web (Interface Visual)
-
-1. Acesse `http://SEU_IP` no navegador
-2. Faça login com sua conta Google
-3. **Aguarde as fases 2 e 3** (primeira vez):
-   ```bash
-   # Fase 2: Analisar artigos com IA (pode demorar)
-   docker compose exec backend python main.py analyze --limit 100
-
-   # Fase 3: Indexar (criar embeddings)
-   docker compose exec backend python main.py index
-   ```
-4. Use o campo **"Cortex Verification Engine"** para verificar afirmações:
-   - Cole uma notícia ou afirmação (até 10.000 caracteres)
-   - Clique em **"Run Verification"**
-   - Veja o resultado: **Verdadeiro**, **Falso** ou **Inconclusivo**
-5. Monitore as **estatísticas** e **fontes** na dashboard
-
-### Via CLI (Linha de Comando)
-
-```bash
-# 📊 Ver status do sistema
-python main.py status
-
-# 📰 FASE 1: Coletar notícias de todas as fontes
-python main.py collect                  # Sem limite (coleta tudo)
-python main.py collect --limit 100      # Com limite
-
-# 🧠 FASE 2: Analisar artigos com IA (cuidado com cota da API)
-python main.py analyze --limit 50       # Analisa 50 artigos não analisados
-
-# 🔍 FASE 3: Indexar no banco vetorial (gerar embeddings)
-python main.py index
-
-# ✅ FASE 4: Verificar uma afirmação
-python main.py verify "O governo vai taxar o PIX"
-
-# 🔄 Pipeline completo (coleta + análise + indexação)
-python main.py full-pipeline
-
-# 📜 Ver histórico de verificações
-python main.py history --limit 10
-
-# 📊 Ver qualidade da base de dados
-python main.py quality
-
-# 🌱 Popular feeds RSS no banco
-python main.py seed-feeds
-```
-
-### Via API REST
-
-```bash
-# ✅ Verificar uma afirmação (Phase 4)
-curl -X POST http://SEU_IP:8420/api/verify \
-  -H "Content-Type: application/json" \
-  -d '{"claim": "Vacinas causam autismo"}'
-
-# 📊 Status do sistema
-curl http://SEU_IP:8420/api/status
-
-# 🧠 Rodar análise em batch (Phase 2)
-curl -X POST http://SEU_IP:8420/api/analyze \
-  -H "Content-Type: application/json" \
-  -d '{"limit": 50}'
-
-# 📜 Histórico de verificações
-curl http://SEU_IP:8420/api/history
-
-# 📊 Qualidade da base de dados
-curl http://SEU_IP:8420/api/quality
-
-# 🟢 Status das fontes (online/offline)
-curl http://SEU_IP:8420/api/sources
-
-# 📰 Últimas notícias coletadas
-curl http://SEU_IP:8420/api/news?limit=20
-```
-
-> 📚 **Documentação completa da API** disponível em: `http://SEU_IP:8420/docs`
-
----
-
-## 📁 Estrutura do Projeto
-
-```
-kill-fake-news/
-│
-├── 🌐 frontend/                   # Interface do Usuário (React)
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Navbar.tsx         # Barra de navegação
-│   │   │   ├── StatsGrid.tsx      # Cards de estatísticas
-│   │   │   ├── VerifyForm.tsx     # Motor de verificação
-│   │   │   ├── HistoryList.tsx    # Histórico de verificações
-│   │   │   ├── SchedulerInfo.tsx  # Info de automação
-│   │   │   └── SourcesList.tsx    # Lista de fontes
-│   │   ├── pages/                 # Páginas da aplicação
-│   │   ├── App.tsx                # Componente principal
-│   │   └── main.tsx               # Entry point
-│   ├── Dockerfile                 # Build do frontend (Node → Nginx)
-│   ├── package.json               # Dependências JavaScript
-│   └── .env.example               # Template de variáveis
-│
-├── ⚙️ core/                       # Configurações do Sistema
-│   ├── config.py                  # Configuração centralizada
-│   ├── database.py                # Conexão PostgreSQL + AsyncSession
-│   ├── sql_models.py              # SQLModel schemas (Article, Source, etc.)
-│   ├── rate_limits.py             # Limites da API Gemini
-│   ├── logging_config.py          # Configuração de logs
-│   └── ui.py                      # Interface CLI
-│
-├── 🧠 modules/                    # Módulos de Processamento
-│   ├── intelligence/              # Coleta de notícias
-│   │   └── collector.py           # RSS/Scraping engine (parallel)
-│   ├── analysis/                  # Análise IA
-│   │   └── detector.py            # Gemini fake news detector
-│   └── detection/                 # Verificação RAG
-│       └── verification_engine.py # pgvector + Gemini RAG
-│
-├── 📜 scripts/                    # Scripts utilitários
-│   └── seed_rss_feeds.py          # Popular feeds no PostgreSQL
-│
-├── 🧪 tests/                      # Testes Automatizados
-│
-├── 📄 server.py                   # API FastAPI (backend)
-├── 📄 scheduler.py                # Agendador de tarefas (APScheduler)
-├── 📄 main.py                     # CLI principal (argparse)
-├── 🐳 Dockerfile                  # Build do backend
-├── 🐳 docker-compose.yml          # Orquestração (backend + frontend + db)
-├── 📋 requirements.txt            # Dependências Python
-└── 📖 README.md                   # Este arquivo
-```
-
----
-
-## 🗄️ Schema do Banco de Dados (PostgreSQL)
-
-```sql
--- Tabela de fontes de notícias
-CREATE TABLE source (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR UNIQUE NOT NULL,        -- Ex: "G1", "Folha"
-  display_name VARCHAR NOT NULL,
-  website_url VARCHAR NOT NULL,
-  status VARCHAR DEFAULT 'online',
-  last_checked TIMESTAMP,
-  is_active BOOLEAN DEFAULT true
-);
-
--- Tabela de feeds RSS
-CREATE TABLE rss_feed (
-  id SERIAL PRIMARY KEY,
-  source_id INTEGER REFERENCES source(id),
-  feed_url VARCHAR UNIQUE NOT NULL,
-  feed_type VARCHAR DEFAULT 'rss2',  -- rss2, atom, sitemap
-  category VARCHAR,                   -- Ex: "Tecnologia", "Política"
-  is_active BOOLEAN DEFAULT true,
-  last_fetched TIMESTAMP,
-  fetch_count INTEGER DEFAULT 0,
-  error_count INTEGER DEFAULT 0,
-  last_error TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
--- Tabela de artigos coletados
-CREATE TABLE article (
-  id SERIAL PRIMARY KEY,
-  title VARCHAR NOT NULL,
-  subtitle VARCHAR,
-  url VARCHAR UNIQUE NOT NULL,       -- Unique constraint (deduplicação)
-  content TEXT NOT NULL,
-  author VARCHAR NOT NULL,
-  published_at TIMESTAMP,
-  created_at TIMESTAMP NOT NULL,
-  embedding VECTOR(768),             -- pgvector: 768-dimensional
-  source_id INTEGER REFERENCES source(id)
-);
-
-CREATE INDEX ON article USING HNSW (embedding vector_cosine_ops);
-
--- Tabela de análises IA (Phase 2)
-CREATE TABLE analysis (
-  id SERIAL PRIMARY KEY,
-  article_id INTEGER REFERENCES article(id) UNIQUE,
-  is_fake BOOLEAN NOT NULL,
-  confidence FLOAT NOT NULL,
-  reasoning TEXT NOT NULL,
-  markers JSON,                      -- ["sensacionalismo", "falta de fontes"]
-  scores JSON,                       -- {"factual": 7, "bias": 3, ...}
-  analyzed_at TIMESTAMP NOT NULL
-);
-
--- Tabela de verificações (Phase 4)
-CREATE TABLE verification (
-  id SERIAL PRIMARY KEY,
-  user_id VARCHAR,
-  claim TEXT NOT NULL,
-  verdict VARCHAR NOT NULL,          -- [VERDADEIRO], [FALSO], etc.
-  confidence FLOAT NOT NULL,
-  evidence JSON,                     -- [article_ids]
-  created_at TIMESTAMP NOT NULL
-);
-```
-
----
-
-## 🐳 Comandos Docker Úteis
-
-```bash
-# 📊 Ver containers rodando
-docker ps
-
-# 📜 Ver logs do backend
-docker compose logs backend --tail 50 -f
-
-# 📜 Ver logs do frontend
-docker compose logs frontend --tail 50 -f
-
-# 📜 Ver logs do PostgreSQL
-docker compose logs vortex-db --tail 50 -f
-
-# 🔄 Atualizar após mudanças no código
-git pull origin main
-docker compose down
-docker compose up -d --build
-
-# 🔄 Rebuild apenas backend
-docker compose up -d --build backend
-
-# ⏹️ Parar tudo
-docker compose down
-
-# 🗑️ Limpar tudo (⚠️ APAGA DADOS)
-docker compose down -v
-docker system prune -af
-
-# 💾 Backup do banco
-docker compose exec vortex-db pg_dump -U vortex vortex_db > backup.sql
-
-# 📥 Restaurar backup
-cat backup.sql | docker compose exec -T vortex-db psql -U vortex vortex_db
-
-# 🐚 Entrar no container backend (debug)
-docker compose exec backend bash
-
-# 🐚 Acessar PostgreSQL
+# Conectar ao PostgreSQL
 docker compose exec vortex-db psql -U vortex -d vortex_db
+
+# Ver total de artigos
+docker compose exec -T vortex-db psql -U vortex -d vortex_db -c "SELECT COUNT(*) FROM article;"
+
+# Ver distribuição por fonte
+docker compose exec -T vortex-db psql -U vortex -d vortex_db -c \
+  "SELECT s.name, COUNT(a.id) FROM source s LEFT JOIN article a ON a.source_id = s.id GROUP BY s.name ORDER BY count DESC;"
+
+# Ver feeds com mais erros
+docker compose exec -T vortex-db psql -U vortex -d vortex_db -c \
+  "SELECT feed_url, error_count, last_error FROM rss_feed WHERE error_count > 0 ORDER BY error_count DESC LIMIT 10;"
+```
+
+### Monitoramento de Provedores de IA
+
+```bash
+# Ver status de todos os provedores (em Python)
+docker compose exec backend python -c "
+from core.llm import LLMManager
+from core.config import Config
+import asyncio
+
+async def main():
+    manager = LLMManager(
+        enabled_providers=Config.ENABLED_PROVIDERS,
+        api_keys=Config.get_provider_api_keys()
+    )
+    status = manager.get_status()
+    print('=== LLM Providers ===')
+    for p in status['llm_providers']:
+        print(f'{p[\"name\"]}: {p[\"status\"]} (success: {p[\"success_count\"]}, errors: {p[\"error_count\"]})')
+
+asyncio.run(main())
+"
 ```
 
 ---
 
-## ⚙️ Configuração Avançada
+## 🌐 Configuração Avançada
+
+### Selecionar Apenas Provedores FREE
+
+```env
+ENABLED_PROVIDERS=groq,gemini
+```
+
+### Ativar Load Balancing (Round-Robin)
+
+```env
+LOAD_BALANCE=true
+```
+
+### Usar Apenas Provedores Pagos de Alta Qualidade
+
+```env
+ENABLED_PROVIDERS=openai,anthropic
+```
 
 ### Ajustar Intervalo de Coleta
 
-Edite `.env`:
 ```env
-COLLECT_INTERVAL_HOURS=1   # Coletar a cada 1 hora
-SOURCE_CHECK_INTERVAL_HOURS=1  # Monitorar fontes a cada 1 hora
-```
-
-Reinicie o backend:
-```bash
-docker compose restart backend
-```
-
-### Adicionar Novas Fontes RSS
-
-1. Adicione a fonte em `scripts/seed_rss_feeds.py`
-2. Execute:
-```bash
-docker compose exec backend python scripts/seed_rss_feeds.py
-```
-
-### Melhorar Seletores de Scraping
-
-Edite `modules/intelligence/collector.py` → `DOMAIN_MAP`:
-
-```python
-DOMAIN_MAP = {
-    "exemplo.com.br": {
-        "t": "h1.titulo",           # Seletor CSS do título
-        "s": "h2.subtitulo",        # Seletor CSS do subtítulo
-        "b": "div.corpo-texto",     # Seletor CSS do body
-        "p": "p.paragrafo"          # Seletor CSS dos parágrafos
-    }
-}
+COLLECT_INTERVAL_HOURS=6  # Coletar a cada 6 horas
 ```
 
 ---
 
-## ⚠️ Limitações e Avisos
+## 📈 Métricas de Performance (Exemplo Real)
 
-| Limitação | Detalhe |
-|-----------|---------|
-| **Free Tier Gemini** | ~1.500 requisições/dia no plano gratuito. Suficiente para uso moderado. |
-| **Precisão da IA** | Nenhuma IA é 100% precisa. Sempre verifique fontes primárias. |
-| **Idioma** | Otimizado para **Português Brasileiro**. |
-| **Fontes** | Limitado às fontes com RSS feeds públicos. Novas podem ser adicionadas. |
-| **Embeddings** | Qualidade depende da base de dados. Mais artigos = mais precisão. |
-| **Primeira coleta** | Pode demorar 30min-1h para coletar ~8.000 artigos na primeira vez. |
+**Coleta:**
+- 📰 8.673 artigos coletados
+- ⏱️ Tempo médio: ~1 hora (155 feeds)
+- 🎯 Taxa de sucesso: 76%
+- 💾 Tamanho do banco: ~35 MB
 
----
+**Análise:**
+- 🤖 100 artigos analisados em ~5 minutos (Groq)
+- 📊 Velocidade: ~20 artigos/minuto
+- 💰 Custo: $0 (usando Groq FREE)
 
-## 📈 Performance e Escalabilidade
-
-| Métrica | Valor |
-|---------|-------|
-| **Artigos coletados** | 8.673+ (exemplo real) |
-| **Taxa de coleta** | ~150-200 artigos/minuto (5 paralelos) |
-| **Tamanho do banco** | ~35 MB para 8.673 artigos |
-| **Taxa de sucesso** | ~76% (23% rejeitados por qualidade) |
-| **Busca semântica** | <100ms (pgvector HNSW index) |
-| **API Gemini** | 2s rate limit entre análises (cota gratuita) |
+**Verificação:**
+- 🔍 Tempo médio de resposta: 2-5 segundos
+- 🎯 Top 5 artigos similares recuperados
+- ✅ Veredicto estruturado com evidências
 
 ---
 
 ## 🤝 Contribuindo
 
-Contribuições são bem-vindas! Siga estes passos:
+Contribuições são bem-vindas! Por favor:
 
-1. 🍴 Faça um **fork** do projeto
-2. 🌿 Crie uma branch (`git checkout -b feature/MinhaFeature`)
-3. 💾 Commit suas mudanças (`git commit -m 'feat: adiciona MinhaFeature'`)
-4. 📤 Push para a branch (`git push origin feature/MinhaFeature`)
-5. 🔀 Abra um **Pull Request**
-
----
-
-## 🌟 Roadmap Futuro
-
-- [x] ✅ Migração para PostgreSQL + pgvector
-- [x] ✅ Database-driven RSS feeds (155 feeds)
-- [x] ✅ Parallel scraping com asyncio
-- [x] ✅ Batch commits e deduplicação
-- [ ] 🌍 Suporte a múltiplos idiomas
-- [ ] 💬 Integração com Telegram e WhatsApp
-- [ ] ⭐ Sistema de reputação de fontes (consenso multi-fonte)
-- [ ] 📈 Dashboard analytics avançado
-- [ ] 🔌 Extensão para navegadores (Chrome/Firefox)
-- [ ] 📱 Aplicativo mobile (React Native)
-- [ ] 🔗 Google Fact Check API integration
-- [ ] 🎯 Aumento de fontes (R7, Metrópoles, etc.)
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/MinhaFeature`)
+3. Commit suas mudanças (`git commit -m 'Add: MinhaFeature'`)
+4. Push para a branch (`git push origin feature/MinhaFeature`)
+5. Abra um Pull Request
 
 ---
 
-## 📝 Licença
+## 📄 Licença
 
-Este projeto está sob a licença **MIT**. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
 ---
 
-## 🆘 Suporte e Contato
+## 🙏 Agradecimentos
 
-- 📧 **Issues**: [GitHub Issues](https://github.com/pomboid/kill-fake-news/issues)
-- 💼 **LinkedIn**: [Weversson Vital](https://www.linkedin.com/in/weversson-vital/) | [Vitor Benedett Caldas](https://www.linkedin.com/in/vitorbenedettcaldas/)
+- **Groq** por fornecer acesso FREE ilimitado aos modelos Llama
+- **Google** pelo Gemini com tier FREE generoso
+- **OpenAI, Anthropic, DeepSeek, Mistral, Together AI, Cohere** pelas APIs de qualidade
+- Comunidade Python e ecossistema FastAPI
+- Contribuidores do projeto pgvector
+
+---
+
+## 📞 Suporte
+
+- 📧 Email: [seu-email@exemplo.com]
+- 🐛 Issues: [GitHub Issues](https://github.com/pomboid/kill-fake-news/issues)
+- 💬 Discussões: [GitHub Discussions](https://github.com/pomboid/kill-fake-news/discussions)
 
 ---
 
 <p align="center">
-  <strong>Desenvolvido com 💚 por Weversson Vital e Vitor Benedett Caldas</strong>
-  <br/>
-  <em>© 2026 VORTEX Cognitive Defense System. Combatendo Fake News com Tecnologia.</em>
+  Feito com ❤️ por <strong>VORTEX Team</strong>
+</p>
+
+<p align="center">
+  <sub>Combatendo desinformação, uma verificação de cada vez 🛡️</sub>
 </p>
