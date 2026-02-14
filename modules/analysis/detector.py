@@ -3,6 +3,7 @@ import logging
 import time
 from typing import Optional
 from sqlmodel import select
+from sqlalchemy import func
 from core.config import Config
 from core.database import get_session
 from core.sql_models import Article, Analysis
@@ -12,8 +13,10 @@ from core.llm import LLMManager
 
 logger = logging.getLogger("VORTEX.Detector")
 
-# Concurrency: 5 simultaneous requests (OpenAI gpt-4o-mini: 500 RPM, 200K TPM)
-ANALYZE_CONCURRENCY = 5
+# Process 50 articles per batch to avoid memory/task overload
+ANALYZE_BATCH_SIZE = 50
+# 3 concurrent LLM requests per batch (gpt-4o-mini: 500 RPM, 200K TPM)
+ANALYZE_CONCURRENCY = 3
 
 
 class NewsDetector:
@@ -52,7 +55,6 @@ class NewsDetector:
         """
 
         try:
-            # Use LLMManager with automatic failover
             data = await self.llm_manager.generate_json(prompt)
             return FakeNewsDetection(**data)
         except Exception as e:
@@ -69,36 +71,54 @@ class NewsDetector:
         limit_msg = f"limit={limit}" if limit else "all"
         UI.info(f"Checking for unanalyzed articles ({limit_msg})...")
 
+        # Count total unanalyzed articles
         async for session in get_session():
-            # Fetch unanalyzed articles
-            stmt = select(Article).outerjoin(Analysis, Article.id == Analysis.article_id).where(Analysis.id == None)
-            if limit:
-                stmt = stmt.limit(limit)
-            result = await session.execute(stmt)
-            articles = result.scalars().all()
+            count_stmt = (
+                select(func.count(Article.id))
+                .outerjoin(Analysis, Article.id == Analysis.article_id)
+                .where(Analysis.id == None)
+            )
+            total = (await session.execute(count_stmt)).scalar()
 
-            if not articles:
-                UI.info("No unanalyzed articles found.")
-                return
+        if limit:
+            total = min(total, limit)
 
-            total = len(articles)
-            UI.info(f"Found {total} articles to analyze (concurrency={ANALYZE_CONCURRENCY}).")
+        if total == 0:
+            UI.info("No unanalyzed articles found.")
+            return
 
-            # Progress tracking
-            completed = 0
-            errors = 0
-            start_time = time.time()
+        UI.info(f"Found {total} articles to analyze (batches of {ANALYZE_BATCH_SIZE}, concurrency={ANALYZE_CONCURRENCY}).")
+
+        completed = 0
+        errors = 0
+        start_time = time.time()
+
+        while completed < total:
+            # Fetch next batch of unanalyzed articles
+            fetch_size = min(ANALYZE_BATCH_SIZE, total - completed)
+            async for session in get_session():
+                stmt = (
+                    select(Article)
+                    .outerjoin(Analysis, Article.id == Analysis.article_id)
+                    .where(Analysis.id == None)
+                    .limit(fetch_size)
+                )
+                result = await session.execute(stmt)
+                batch = result.scalars().all()
+
+            if not batch:
+                break
+
             semaphore = asyncio.Semaphore(ANALYZE_CONCURRENCY)
 
-            async def analyze_one(article: Article):
+            async def analyze_one(art: Article):
                 nonlocal completed, errors
                 async with semaphore:
-                    detection = await self.analyze_article(article)
+                    detection = await self.analyze_article(art)
 
-                    # Save to DB using a new session for thread safety
                     async for save_session in get_session():
                         analysis = Analysis(
-                            article_id=article.id,
+                            article_id=art.id,
                             is_fake=detection.is_fake,
                             confidence=detection.confidence_score,
                             reasoning=detection.reasoning,
@@ -112,7 +132,6 @@ class NewsDetector:
                     elapsed = time.time() - start_time
                     rate = completed / elapsed if elapsed > 0 else 0
                     remaining = (total - completed) / rate if rate > 0 else 0
-                    remaining_min = remaining / 60
 
                     if detection.reasoning and "Error" in detection.reasoning:
                         errors += 1
@@ -120,18 +139,20 @@ class NewsDetector:
                     UI.info(
                         f"[{completed}/{total}] "
                         f"({100 * completed // total}%) "
-                        f"{article.title[:35]}... "
-                        f"| {rate:.1f}/s | ETA: {remaining_min:.1f}min"
+                        f"{art.title[:35]}... "
+                        f"| {rate:.1f}/s | ETA: {remaining / 60:.1f}min"
                     )
 
-                    # Small delay to respect rate limits
-                    await asyncio.sleep(0.3)
+                    await asyncio.sleep(0.5)
 
-            # Process all articles concurrently with semaphore
-            tasks = [analyze_one(article) for article in articles]
+            tasks = [analyze_one(a) for a in batch]
             await asyncio.gather(*tasks, return_exceptions=True)
 
-            elapsed_total = time.time() - start_time
+            batch_num = (completed // ANALYZE_BATCH_SIZE) + 1
+            UI.info(f"Batch {batch_num} complete ({completed}/{total} total)")
+
+        elapsed_total = time.time() - start_time
+        if completed > 0:
             UI.info(
                 f"Analysis complete: {completed}/{total} articles "
                 f"({errors} errors) in {elapsed_total / 60:.1f} minutes "

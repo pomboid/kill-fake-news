@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from sqlmodel import select
+from sqlalchemy import func
 
 from core.config import Config
 from core.database import get_session
@@ -14,9 +15,11 @@ from core.llm import LLMManager
 
 logger = logging.getLogger("VORTEX.Verification")
 
-# Concurrency: 5 simultaneous requests (OpenAI text-embedding-3-small: 3K RPM, 1M TPM)
-# With retry backoff on 429, this naturally throttles to stay under limits
-INDEX_CONCURRENCY = 5
+# Process 50 articles per batch to avoid memory/task overload
+INDEX_BATCH_SIZE = 50
+# 3 concurrent embedding requests per batch
+INDEX_CONCURRENCY = 3
+
 
 class FactVerificationEngine:
     """Uses RAG with semantic search (pgvector) to verify claims."""
@@ -29,11 +32,10 @@ class FactVerificationEngine:
             enabled_providers=Config.ENABLED_PROVIDERS,
             api_keys=Config.get_provider_api_keys(),
             load_balance=Config.LOAD_BALANCE
-        ) 
+        )
 
     async def _generate_embedding(self, text: str) -> List[float]:
         try:
-            # Use LLMManager with automatic failover
             embedding = await self.llm_manager.get_embedding(text[:9000])
             return embedding
         except Exception as e:
@@ -41,42 +43,51 @@ class FactVerificationEngine:
             return []
 
     async def index_documents(self, limit: Optional[int] = None):
-        """Generates embeddings for articles that don't have them."""
+        """Generates embeddings for articles that don't have them, in batches."""
         limit_msg = f"limit={limit}" if limit else "all"
         UI.info(f"Checking for unindexed articles ({limit_msg})...")
 
+        # Count total unindexed articles
         async for session in get_session():
-            # Select articles where embedding is NULL
-            stmt = select(Article).where(Article.embedding == None)
-            if limit:
-                stmt = stmt.limit(limit)
-            result = await session.execute(stmt)
-            articles = result.scalars().all()
+            count_stmt = select(func.count(Article.id)).where(Article.embedding == None)
+            total = (await session.execute(count_stmt)).scalar()
 
-            if not articles:
-                UI.info("All articles are indexed.")
-                return
+        if limit:
+            total = min(total, limit)
 
-            total = len(articles)
-            UI.info(f"Found {total} articles to index (concurrency={INDEX_CONCURRENCY}).")
+        if total == 0:
+            UI.info("All articles are indexed.")
+            return
 
-            # Progress tracking
-            completed = 0
-            errors = 0
-            start_time = time.time()
+        UI.info(f"Found {total} articles to index (batches of {INDEX_BATCH_SIZE}, concurrency={INDEX_CONCURRENCY}).")
+
+        completed = 0
+        errors = 0
+        start_time = time.time()
+
+        while completed < total:
+            # Fetch next batch of unindexed articles
+            fetch_size = min(INDEX_BATCH_SIZE, total - completed)
+            async for session in get_session():
+                stmt = select(Article).where(Article.embedding == None).limit(fetch_size)
+                result = await session.execute(stmt)
+                batch = result.scalars().all()
+
+            if not batch:
+                break
+
             semaphore = asyncio.Semaphore(INDEX_CONCURRENCY)
 
-            async def index_one(article: Article):
+            async def index_one(art: Article):
                 nonlocal completed, errors
                 async with semaphore:
-                    text_content = f"Title: {article.title}\nSubtitle: {article.subtitle or ''}\nContent: {article.content}"
+                    text_content = f"Title: {art.title}\nSubtitle: {art.subtitle or ''}\nContent: {art.content}"
                     embedding = await self._generate_embedding(text_content)
 
                     if embedding:
-                        # Save to DB using a new session for thread safety
                         async for save_session in get_session():
-                            article.embedding = embedding
-                            save_session.add(article)
+                            art.embedding = embedding
+                            await save_session.merge(art)
                             await save_session.commit()
                     else:
                         errors += 1
@@ -85,23 +96,24 @@ class FactVerificationEngine:
                     elapsed = time.time() - start_time
                     rate = completed / elapsed if elapsed > 0 else 0
                     remaining = (total - completed) / rate if rate > 0 else 0
-                    remaining_min = remaining / 60
 
                     UI.info(
                         f"[{completed}/{total}] "
                         f"({100 * completed // total}%) "
-                        f"{article.title[:35]}... "
-                        f"| {rate:.1f}/s | ETA: {remaining_min:.1f}min"
+                        f"{art.title[:35]}... "
+                        f"| {rate:.1f}/s | ETA: {remaining / 60:.1f}min"
                     )
 
-                    # Delay to respect rate limits (TPM)
-                    await asyncio.sleep(0.3)
+                    await asyncio.sleep(0.5)
 
-            # Process all articles concurrently with semaphore
-            tasks = [index_one(article) for article in articles]
+            tasks = [index_one(a) for a in batch]
             await asyncio.gather(*tasks, return_exceptions=True)
 
-            elapsed_total = time.time() - start_time
+            batch_num = (completed // INDEX_BATCH_SIZE) + 1
+            UI.info(f"Batch {batch_num} complete ({completed}/{total} total)")
+
+        elapsed_total = time.time() - start_time
+        if completed > 0:
             UI.info(
                 f"Indexing complete: {completed}/{total} articles "
                 f"({errors} errors) in {elapsed_total / 60:.1f} minutes "
