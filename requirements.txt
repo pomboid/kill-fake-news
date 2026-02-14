@@ -10,12 +10,11 @@ slowapi==0.1.9
 uvicorn==0.27.1
 APScheduler==3.10.4
 
-# Multi-Provider AI Support (8 providers)
-google-generativeai==0.8.3  # Gemini
-groq==0.11.0                # Groq (FREE)
-openai==1.54.5              # OpenAI, DeepSeek, Together, Mistral (OpenAI-compatible)
-anthropic==0.39.0           # Claude
-cohere==5.11.4              # Cohere
+# Multi-Provider AI Support (4 providers: Groq, OpenAI, Gemini, Anthropic)
+groq==0.11.0                # FREE text generation
+google-generativeai==0.8.3  # FREE embeddings (768 dims) + text backup
+openai==1.54.5              # Paid embeddings (1536 dims, primary)
+anthropic==0.39.0           # Paid text generation (backup)
 
 # Database
 sqlmodel==0.0.14
