@@ -13,9 +13,7 @@ logger = logging.getLogger("VORTEX.LLM.Gemini")
 class GeminiProvider(LLMProvider, EmbeddingProvider):
     """
     Google Gemini provider with both LLM and embedding capabilities.
-    FREE tier: 1M tokens/min for Flash, 15 RPM for Pro
-    Models: Gemini 2.0 Flash, Gemini 1.5 Pro, Gemini 1.5 Flash
-    Embeddings: models/embedding-001 (768 dimensions)
+    Paid Tier 1: gemini-2.0-flash (2K RPM, 4M TPM), embedding-001 (3K RPM, 1M TPM)
     """
 
     def __init__(self, api_key: Optional[str] = None):
@@ -38,7 +36,7 @@ class GeminiProvider(LLMProvider, EmbeddingProvider):
 
     @property
     def default_model(self) -> str:
-        return "gemini-2.0-flash-exp"  # Fastest, FREE
+        return "gemini-2.0-flash"  # 2K RPM, 4M TPM, Unlimited RPD
 
     @property
     def embedding_dimensions(self) -> int:
