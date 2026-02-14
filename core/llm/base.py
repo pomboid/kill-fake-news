@@ -82,9 +82,8 @@ class LLMProvider(ABC):
         self.error_count += 1
         self.last_error = str(error)
 
-        # Disable after 3 consecutive failures
-        if self.error_count >= 3:
-            self.status = ProviderStatus.FAILED
+        # Disable immediately on first failure to avoid wasting time on broken providers
+        self.status = ProviderStatus.FAILED
 
     def is_available(self) -> bool:
         """Check if provider is available"""
@@ -139,8 +138,8 @@ class EmbeddingProvider(ABC):
         self.error_count += 1
         self.last_error = str(error)
 
-        if self.error_count >= 3:
-            self.status = ProviderStatus.FAILED
+        # Disable immediately on first failure to avoid wasting time on broken providers
+        self.status = ProviderStatus.FAILED
 
     def is_available(self) -> bool:
         """Check if provider is available"""

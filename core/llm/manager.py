@@ -92,9 +92,10 @@ class LLMManager:
 
         logger.info(f"LLM Manager initialized with {len(self.llm_providers)} providers")
 
-    def _get_next_provider(self, providers: List) -> Optional[Any]:
+    def _get_next_provider(self, providers: List, exclude: List = None) -> Optional[Any]:
         """Get next available provider using round-robin or priority"""
-        available = [p for p in providers if p.is_available()]
+        exclude = exclude or []
+        available = [p for p in providers if p.is_available() and p not in exclude]
 
         if not available:
             return None
@@ -136,16 +137,12 @@ class LLMManager:
         last_error = None
 
         while True:
-            provider = self._get_next_provider(self.llm_providers)
+            provider = self._get_next_provider(self.llm_providers, tried_providers)
 
             if not provider:
                 error_msg = "All LLM providers are unavailable"
                 logger.error(error_msg)
                 raise Exception(error_msg)
-
-            if provider in tried_providers:
-                # We've tried all providers
-                break
 
             tried_providers.append(provider)
 
@@ -178,15 +175,12 @@ class LLMManager:
         last_error = None
 
         while True:
-            provider = self._get_next_provider(self.llm_providers)
+            provider = self._get_next_provider(self.llm_providers, tried_providers)
 
             if not provider:
                 error_msg = "All LLM providers are unavailable"
                 logger.error(error_msg)
                 raise Exception(error_msg)
-
-            if provider in tried_providers:
-                break
 
             tried_providers.append(provider)
 
@@ -217,15 +211,12 @@ class LLMManager:
         last_error = None
 
         while True:
-            provider = self._get_next_provider(self.embedding_providers)
+            provider = self._get_next_provider(self.embedding_providers, tried_providers)
 
             if not provider:
                 error_msg = "All embedding providers are unavailable"
                 logger.error(error_msg)
                 raise Exception(error_msg)
-
-            if provider in tried_providers:
-                break
 
             tried_providers.append(provider)
 

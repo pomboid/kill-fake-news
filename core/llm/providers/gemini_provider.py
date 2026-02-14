@@ -46,6 +46,8 @@ class GeminiProvider(LLMProvider, EmbeddingProvider):
 
     @property
     def default_embedding_model(self) -> str:
+        # Note: Gemini embeddings are currently having API issues
+        # Keeping this for future compatibility
         return "models/embedding-001"
 
     async def generate_text(
