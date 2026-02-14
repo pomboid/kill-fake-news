@@ -616,9 +616,8 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ## 📞 Suporte
 
-- 📧 Email: [seu-email@exemplo.com]
-- 🐛 Issues: [GitHub Issues](https://github.com/pomboid/kill-fake-news/issues)
-- 💬 Discussões: [GitHub Discussions](https://github.com/pomboid/kill-fake-news/discussions)
+- 📧 **Issues**: [GitHub Issues](https://github.com/pomboid/kill-fake-news/issues)
+- 💼 **LinkedIn**: [Weversson Vital](https://www.linkedin.com/in/weversson-vital/) | [Vitor Benedett Caldas](https://www.linkedin.com/in/vitorbenedettcaldas/)
 
 ---
 
