@@ -102,7 +102,7 @@ docker compose up -d
 
 # Aguarde ~30s para o PostgreSQL inicializar
 
-# Popule os feeds RSS (155 feeds de 6 fontes)
+# Popule os feeds RSS (19 fontes + Google News)
 docker compose exec backend python scripts/seed_rss_feeds.py
 
 # Colete as primeiras notícias
@@ -145,16 +145,29 @@ Evidências:
 
 ### 1. 📰 Coleta Automática de Notícias (Database-Driven)
 
-O sistema busca notícias automaticamente em **6 fontes confiáveis** brasileiras usando **155 feeds RSS** armazenados no PostgreSQL:
+O sistema busca notícias automaticamente em **19 fontes brasileiras** + **Google News** usando feeds RSS armazenados no PostgreSQL:
 
-| Fonte | Feeds | Exemplos |
-|-------|-------|----------|
-| **G1** (Globo) | 69 feeds | Brasil, Mundo, Tecnologia, Estados, Cidades |
-| **Folha de S.Paulo** | 44 feeds | Política, Mercado, Cotidiano, F5, Ilustrada |
-| **UOL** | 28 feeds | Notícias, Tecnologia, Esportes, Vestibular |
-| **BBC Brasil** | 12 feeds | Brasil, Internacional, Economia, Ciência |
-| **CNN Brasil** | 1 feed | News Sitemap |
-| **Estadão** | 1 feed | Política |
+| Fonte | Feeds | Tipo |
+|-------|-------|------|
+| **G1** (Globo) | 24 | Portal nacional + estados |
+| **Folha de S.Paulo** | 12 | Editorial (política, economia, ciência) |
+| **UOL** | 7 | Portal grande |
+| **Estadão** | 6 | Multi-categoria |
+| **Agência Brasil** (EBC) | 7 | Oficial do governo |
+| **R7** (Record) | 6 | Portal grande |
+| **Gazeta do Povo** | 5 | Regional/Nacional |
+| **Carta Capital** | 4 | Opinião/Política |
+| **Metrópoles** | 3 | Nacional |
+| **Correio Braziliense** | 3 | Regional/Nacional |
+| **Terra** | 4 | Portal grande |
+| **Google News BR** | 19 | Agregador (sempre fresco) |
+| **BBC Brasil** | 1 | Internacional |
+| **CNN Brasil** | 1 | Nacional |
+| **The Intercept** | 1 | Investigativo |
+| **Poder360** | 1 | Política |
+| **InfoMoney** | 1 | Economia |
+| **Brasil de Fato** | 1 | Alternativo |
+| **Nexo Jornal** | 1 | Análise |
 
 **Arquitetura de Coleta:**
 - ✅ **Database-driven**: URLs armazenadas em PostgreSQL (`rss_feed` table)
@@ -165,11 +178,11 @@ O sistema busca notícias automaticamente em **6 fontes confiáveis** brasileira
 - ✅ **Rate limiting**: 0.5s delay entre batches para não sobrecarregar servidores
 
 **Capacidade atual:**
-- 🔢 **8.673+ artigos** coletados (exemplo de coleta real)
-- 📡 **155 feeds RSS** ativos
+- 📡 **19 fontes** + Google News (107 feeds RSS)
 - 🔄 **Coleta automática** a cada 1 hora (configurável via `COLLECT_INTERVAL_HOURS`)
-- ⚡ **Processamento paralelo** - 5 URLs simultâneas
-- 🎯 **Taxa de sucesso** ~76% (23% rejeitados por qualidade)
+- ⚡ **Processamento paralelo** - 5 URLs simultâneas com batch commits
+- 🌐 **Google News**: 19 feeds dinâmicos (tópicos + buscas temáticas, sempre frescos)
+- 🔀 **Redirect handling**: Google News → artigo original (deduplicação automática)
 
 ### 2. 🤖 Análise com Inteligência Artificial (Phase 2)
 
@@ -274,7 +287,7 @@ Interface web moderna construída com **React 18 + TypeScript**, tema escuro e r
 │                      │  │  📋 4-Phase Pipeline                         │  │
 │                      │  │                                              │  │
 │                      │  │  Phase 1: Collector (RSS/Scraping)          │  │
-│                      │  │  • 155 RSS feeds from PostgreSQL            │  │
+│                      │  │  • 107 RSS feeds from 19 sources            │  │
 │                      │  │  • Parallel scraping (5 async)              │  │
 │                      │  │  • Batch commits                            │  │
 │                      │  │                                              │  │
@@ -300,8 +313,8 @@ Interface web moderna construída com **React 18 + TypeScript**, tema escuro e r
 │                      │  │  • Embeddings (1536 dim vectors)             │  │
 │                      │  │  • Analysis (AI verdicts)                    │  │
 │                      │  │  • Verifications (fact-checks)               │  │
-│                      │  │  • RSS Feeds (155 URLs)                      │  │
-│                      │  │  • Sources (6 news outlets)                  │  │
+│                      │  │  • RSS Feeds (107 URLs)                      │  │
+│                      │  │  • Sources (19 news outlets)                 │  │
 │                      │  └──────────────────────────────────────────────┘  │
 │                      │                                                     │
 │                      │  ⏰ APScheduler (Background Jobs)                   │
@@ -532,10 +545,10 @@ COLLECT_INTERVAL_HOURS=6  # Coletar a cada 6 horas
 ## 📈 Métricas de Performance (Exemplo Real)
 
 **Coleta:**
-- 📰 8.673 artigos coletados
-- ⏱️ Tempo médio: ~1 hora (155 feeds)
-- 🎯 Taxa de sucesso: 76%
-- 💾 Tamanho do banco: ~35 MB
+- 📡 19 fontes brasileiras + Google News (107 feeds)
+- 🌐 Google News: conteúdo sempre atualizado (buscas `when:1d`)
+- ⚡ Scraping paralelo com batch commits
+- 🔀 Deduplicação por URL final (suporta redirects)
 
 **Análise:**
 - 🤖 100 artigos analisados em ~5 minutos (OpenAI)

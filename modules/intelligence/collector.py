@@ -2,7 +2,7 @@ import asyncio
 import re
 import logging
 import json
-from typing import List, Optional, Dict
+from typing import List, Optional
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 import httpx
@@ -42,6 +42,8 @@ class ContentScraper:
         "gazetadopovo.com.br": {"t": "h1", "s": None, "b": "article", "p": "p"},
         "cartacapital.com.br": {"t": "h1", "s": None, "b": "div.entry-content", "p": "p"},
         "theintercept.com": {"t": "h1", "s": None, "b": "div.post-content", "p": "p"},
+        "intercept.com.br": {"t": "h1", "s": None, "b": "div.post-content", "p": "p"},
+        "nexojornal.com.br": {"t": "h1", "s": None, "b": "article", "p": "p"},
         "poder360.com.br": {"t": "h1", "s": None, "b": "article", "p": "p"},
         "terra.com.br": {"t": "h1", "s": None, "b": "article", "p": "p"},
         "infomoney.com.br": {"t": "h1", "s": None, "b": "article", "p": "p"},
@@ -66,12 +68,15 @@ class ContentScraper:
 
     async def scrape(self, client: httpx.AsyncClient, url: str) -> Optional[Article]:
         try:
-            domain = urlparse(url).netloc.replace("www.", "")
             resp = await client.get(url, timeout=20)
             resp.raise_for_status()
-            
+
+            # Use final URL after redirects (critical for Google News -> actual article)
+            final_url = str(resp.url)
+            domain = urlparse(final_url).netloc.replace("www.", "")
+
             soup = BeautifulSoup(resp.text, 'html.parser')
-            
+
             json_ld = self._extract_json_ld(soup)
             config = self._get_config(domain)
 
@@ -97,7 +102,7 @@ class ContentScraper:
                 subtitle=self._clean_text(self._select(soup, config.get("s"))),
                 author=self._extract_author(json_ld),
                 published_at=pub_date,
-                url=url,
+                url=final_url,
                 content=content,
                 created_at=datetime.utcnow()
             )
@@ -297,9 +302,13 @@ class RSSCollectorEngine:
                                     continue
 
                                 if result:  # Article object
+                                    # Skip if final URL (after redirect) already exists
+                                    if result.url in existing_urls:
+                                        batch_fail += 1
+                                        continue
                                     result.source_id = feed.source_id
                                     articles_to_save.append(result)
-                                    existing_urls.add(url)
+                                    existing_urls.add(result.url)
                                     UI.info(f"   ✅ {result.title[:50]}...")
                                     feed_collected_count += 1
                                     total_collected += 1
