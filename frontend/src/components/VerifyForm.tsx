@@ -53,7 +53,7 @@ export const VerifyForm: React.FC<VerifyFormProps> = ({ onVerify }) => {
                 <textarea
                     value={claim}
                     onChange={(e) => setClaim(e.target.value)}
-                    placeholder="Paste a claim or news snippet to verify with Gemini AI..."
+                    placeholder="Cole uma afirmação ou notícia para verificar com IA..."
                     maxLength={10000}
                     className="mono"
                     style={{
@@ -107,7 +107,7 @@ export const VerifyForm: React.FC<VerifyFormProps> = ({ onVerify }) => {
                                 />
                             </div>
                             <div style={{ textAlign: 'center', fontSize: '0.75rem', marginTop: '0.5rem', color: 'var(--text-muted)' }}>
-                                Processing using Google Gemini 2.0 Flash...
+                                Processing with AI (OpenAI + Gemini failover)...
                             </div>
                         </motion.div>
                     )}

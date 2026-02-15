@@ -53,7 +53,7 @@ limiter = Limiter(key_func=get_remote_address)
 # ─── Request/Response Models ─────────────────────────────────────
 
 class VerifyRequest(BaseModel):
-    claim: str = Field(..., min_length=10, max_length=2000, description="The claim to verify")
+    claim: str = Field(..., min_length=10, max_length=10000, description="The claim to verify")
 
 class AnalyzeRequest(BaseModel):
     limit: Optional[int] = Field(default=None, ge=1, le=5000, description="Number of articles to analyze (default: all)")

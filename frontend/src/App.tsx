@@ -98,7 +98,11 @@ function Dashboard({ isDarkMode, toggleTheme }: { isDarkMode: boolean, toggleThe
 
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.detail || 'Verification failed');
+      const detail = err.detail;
+      const msg = typeof detail === 'string' ? detail
+        : Array.isArray(detail) ? detail[0]?.msg || 'Verification failed'
+        : 'Verification failed';
+      throw new Error(msg);
     }
 
     const result = await res.json();
